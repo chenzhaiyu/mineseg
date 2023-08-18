@@ -1,0 +1,2 @@
+# mineseg
+Mining area segmentation
