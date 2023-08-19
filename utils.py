@@ -20,10 +20,11 @@ def prepare_plot(filename, origImage, origMask, predMask):
 
 	# set the titles of the subplots
 	ax[0].set_title("Image")
-	ax[1].set_title("Original Mask")
+	ax[1].set_title("GT Mask")
 	ax[2].set_title("Predicted Mask")
 
 	# set the layout of the figure and display it
 	figure.tight_layout()
 	figure.show()
 	figure.savefig(filename)
+	plt.close()
