@@ -29,6 +29,7 @@ weight_decay: 0.00001
 batch_size: 256
 num_workers: 11
 num_examples: 1000
+seed: 1117
 
 # hydra settings
 hydra:

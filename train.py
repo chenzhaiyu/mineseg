@@ -16,7 +16,7 @@ import segmentation_models_pytorch as smp
 from segmentation_models_pytorch.encoders import get_preprocessing_fn
 
 from dataset import MiningSectorDataset, load_data
-from utils import print_matrix
+from utils import print_matrix, set_seed
 
 
 @hydra.main(config_path='./conf', config_name='config', version_base='1.2')
@@ -25,7 +25,8 @@ def train(cfg: DictConfig):
     Training.
     """
 
-    # todo: fix randomness
+    #fix randomness
+    set_seed(cfg.seed)
 
     # specify GPU
     os.environ['CUDA_VISIBLE_DEVICES'] = str(cfg.gpu_id)  # assume single GPU
