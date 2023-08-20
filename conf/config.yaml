@@ -6,7 +6,7 @@ defaults:
 
 # paths
 data_root: '/workspace/data/mining'
-checkpoint_dir: './checkpoints'
+checkpoint_dir: './checkpoints/${model}'
 checkpoint_path: '${checkpoint_dir}/checkpoint_best.pth'
 test_image_dir: '${data_root}/patches_img_testset'
 test_mask_dir: '${data_root}/patches_mask_testset'
@@ -14,6 +14,7 @@ result_dir: './outputs'
 
 # architecture
 in_channel: 3
+model: 'unet'
 encoder: 'resnet34'
 encoder_weights: 'imagenet'
 classes: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
@@ -22,7 +23,7 @@ device: 'cuda'
 
 # training & testing
 warm: false
-gpu_id: 5
+gpu_id: 7
 num_epochs: 50
 lr: 0.0001
 weight_decay: 0.00001

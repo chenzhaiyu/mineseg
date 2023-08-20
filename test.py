@@ -38,7 +38,20 @@ def test(cfg: DictConfig):
     _, test_dataloader = load_data(root=cfg.data_root, batch_size=cfg.batch_size, num_workers=cfg.num_workers)
 
     # define model
-    model = smp.Unet(
+    # Unet, UnetPlusPlus, FPN, DeepLabV3, DeepLabV3Plus
+    if cfg.model == 'unet':
+        _model = smp.Unet
+    elif cfg.model == 'unetplusplus':
+        _model = smp.UnetPlusPlus
+    elif cfg.model == 'fpn':
+        _model = smp.FPN
+    elif cfg.model == 'deeplabv3':
+        _model = smp.DeepLabV3
+    elif cfg.model == 'deeplabv3plus':
+        _model = smp.DeepLabV3Plus
+    else:
+        raise ValueError('unexpected model architecture')    
+    model = _model(
         encoder_name=cfg.encoder,             # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
         encoder_weights=cfg.encoder_weights,  # use `imagenet` pre-trained weights for encoder initialization
         in_channels=cfg.in_channel,           # model input channels (1 for gray-scale images, 3 for RGB, etc.)
