@@ -4,7 +4,7 @@ This code implements semantic segmentation of mining areas from satellite images
 
 ## Dependencies
 
-* pytorch
+* torch
 * segmentation-models-pytorch
 * torchmetrics
 * opencv-python
@@ -19,17 +19,23 @@ pip install -r requirements.txt
 
 ## Usage
 
+**Congiruration**
+Configure paths, model architecture, training and test settings in `./conf/config.yaml`.
+
 **Training**
 ```python
 python train.py model=unet gpu_id=0
 ```
+The implemented models are `unet`, `unetplusplus`, `fpn`, `deeplabv3`, and `deeplabv3plus`. Checkpoints will be saved into `./checkpoints/${model}`.
 
 **Evaluation**
 ```python
-python test.py
+python test.py model=unet
 ```
 
 **Prediction**
 ```python
-python predict.py
+python predict.py model=unet
 ```
+Prediction results will be saved into `./outputs/${model}`.
+
