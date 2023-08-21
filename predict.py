@@ -103,6 +103,8 @@ def predict(cfg: DictConfig):
         predMask = predMask.astype(np.uint8)
 
         # prepare a plot for visualization
+        if not os.path.exists(f'{cfg.result_dir}'):
+            os.makedirs(f'{cfg.result_dir}')
         prepare_plot(os.path.join(cfg.result_dir, filename), orig, gtMask, predMask)
 
 

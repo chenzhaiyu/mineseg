@@ -1,0 +1,11 @@
+matplotlib==3.7.2
+numpy==1.25.2
+omegaconf==2.3.0
+opencv_python==4.8.0.76
+segmentation_models_pytorch==0.3.3
+torch==2.0.1
+torchmetrics==1.0.3
+tqdm==4.65.0
+hydra-core
+hydra-colorlog
+
