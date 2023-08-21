@@ -19,23 +19,29 @@ pip install -r requirements.txt
 
 ## Usage
 
-**Congiruration**
+**Configuration**
+
 Configure paths, model architecture, training and test settings in `./conf/config.yaml`.
 
 **Training**
-```python
+
+```bash
 python train.py model=unet gpu_id=0
 ```
+
 The implemented models are `unet`, `unetplusplus`, `fpn`, `deeplabv3`, and `deeplabv3plus`. Checkpoints will be saved into `./checkpoints/${model}`.
 
 **Evaluation**
-```python
+
+```bash
 python test.py model=unet
 ```
 
 **Prediction**
-```python
+
+```bash
 python predict.py model=unet
 ```
+
 Prediction results will be saved into `./outputs/${model}`.
 
