@@ -5,7 +5,7 @@ defaults:
   - override hydra/hydra_logging: colorlog
 
 # paths
-data_root: '/workspace/data/mining'
+data_root: './data'
 checkpoint_dir: './checkpoints/${model}'
 checkpoint_path: '${checkpoint_dir}/checkpoint_best.pth'
 test_image_dir: '${data_root}/patches_img_testset'
@@ -23,7 +23,8 @@ device: 'cuda'
 
 # training & testing
 warm: false
-gpu_id: 7
+freeze_encoder: false
+gpu_ids: [0, 1, 2, 3]
 num_epochs: 50
 lr: 0.0001
 weight_decay: 0.00001

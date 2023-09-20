@@ -3,20 +3,17 @@ Supervised training for multi-class mining site segmentation.
 """
 
 import os
-import logging
-from pathlib import Path
 
 import hydra
 from omegaconf import DictConfig
 from tqdm import tqdm
 import torch
-import torch.nn.functional as F
 from torchmetrics import Accuracy, F1Score, Precision, Recall, ConfusionMatrix
 import segmentation_models_pytorch as smp
-from segmentation_models_pytorch.encoders import get_preprocessing_fn
+from torch.nn import DataParallel
 
-from dataset import MiningSectorDataset, load_data
-from utils import print_matrix, set_seed
+from dataset import load_data
+from utils import print_matrix, set_seed, init_device
 
 
 @hydra.main(config_path='./conf', config_name='config', version_base='1.2')
@@ -24,19 +21,18 @@ def train(cfg: DictConfig):
     """
     Training.
     """
+    # initialize device
+    init_device(cfg.gpu_ids)
+    device = torch.device('cuda' if cfg.device == 'cuda' and torch.cuda.is_available() else 'cpu')
 
-    #fix randomness
+    # fix randomness
     set_seed(cfg.seed)
 
-    # specify GPU
-    os.environ['CUDA_VISIBLE_DEVICES'] = str(cfg.gpu_id)  # assume single GPU
-    device = torch.device('cuda' if cfg.device=='cuda' and torch.cuda.is_available() else 'cpu')
-
     # load data
-    train_dataloader, test_dataloader = load_data(root=cfg.data_root, batch_size=cfg.batch_size, num_workers=cfg.num_workers)
+    train_dataloader, test_dataloader = load_data(root=cfg.data_root, batch_size=cfg.batch_size,
+                                                  num_workers=cfg.num_workers)
 
-    # define model
-    # Unet, UnetPlusPlus, FPN, DeepLabV3, DeepLabV3Plus
+    # define model: Unet, UnetPlusPlus, FPN, DeepLabV3, DeepLabV3Plus
     if cfg.model == 'unet':
         _model = smp.Unet
     elif cfg.model == 'unetplusplus':
@@ -48,7 +44,7 @@ def train(cfg: DictConfig):
     elif cfg.model == 'deeplabv3plus':
         _model = smp.DeepLabV3Plus
     else:
-        raise ValueError('unexpected model architecture')    
+        raise ValueError('unexpected model architecture')
     model = _model(
         encoder_name=cfg.encoder,             # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
         encoder_weights=cfg.encoder_weights,  # use `imagenet` pre-trained weights for encoder initialization
@@ -56,10 +52,15 @@ def train(cfg: DictConfig):
         classes=len(cfg.classes),             # model output channels (number of classes in your dataset)
         activation='softmax2d',               # activation function after the final convolution layer
     )
-    model.to(device)
 
-    # define preprocessing
-    preprocessing_fn = smp.encoders.get_preprocessing_fn(cfg.encoder, cfg.encoder_weights)
+    # freeze encoder if specified
+    if cfg.freeze_encoder:
+        for param in model.encoder.parameters():
+            param.requires_grad = False
+
+    # port model to GPUs
+    model = DataParallel(model)
+    model.to(device)
 
     # define loss
     loss = smp.losses.DiceLoss(mode='multiclass')
@@ -90,7 +91,7 @@ def train(cfg: DictConfig):
 
     # start training
     for i in epoch_generator:
-        
+
         # training epoch
         model.train()
         pbar_train = tqdm(train_dataloader, desc=f'epoch {i}')
@@ -102,7 +103,9 @@ def train(cfg: DictConfig):
             outs = model(images)
             loss_ = loss(outs, targets)
 
-            pbar_train.set_postfix_str('loss={:.2f}, accuracy={:.2f}, f1={:.2f}, precision={:.2f}, recall={:.2f}'.format(loss_, accuracy(outs, targets), f1(outs, targets), precision(outs, targets), recall(outs, targets)))
+            pbar_train.set_postfix_str(
+                'loss={:.2f}, accuracy={:.2f}, f1={:.2f}, precision={:.2f}, recall={:.2f}'.format(
+                    loss_, accuracy(outs, targets), f1(outs, targets), precision(outs, targets), recall(outs, targets)))
 
             loss_.backward()
             optimizer.step()
@@ -129,7 +132,8 @@ def train(cfg: DictConfig):
         precision_test /= len(pbar_test)
         recall_test /= len(pbar_test)
 
-        print('Test: accuracy={:.2f}, f1={:.2f}, precision={:.2f}, recall={:.2f}'.format(accuracy_test, f1_test, precision_test, recall_test))
+        print('Test: accuracy={:.2f}, f1={:.2f}, precision={:.2f}, recall={:.2f}'.format(accuracy_test, f1_test,
+                                                                                         precision_test, recall_test))
         print(f'Confusion matrix:')
         print_matrix(confusion_test)
 

@@ -1,34 +1,33 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import cv2
 import os
 import random
 
 
 def print_matrix(matrix):
-	print('\n'.join([''.join(['{:10}'.format(item) for item in row]) for row in matrix]))
+    print('\n'.join([''.join(['{:10}'.format(item) for item in row]) for row in matrix]))
 
 
 def prepare_plot(filename, origImage, origMask, predMask):
-	# initialize our figure
-	figure, ax = plt.subplots(nrows=1, ncols=3, figsize=(10, 10))
+    # initialize our figure
+    figure, ax = plt.subplots(nrows=1, ncols=3, figsize=(10, 10))
 
-	# plot the original image, its mask, and the predicted mask
-	ax[0].imshow(origImage)
-	ax[1].imshow(origMask)
-	ax[2].imshow(predMask)
+    # plot the original image, its mask, and the predicted mask
+    ax[0].imshow(origImage)
+    ax[1].imshow(origMask)
+    ax[2].imshow(predMask)
 
-	# set the titles of the subplots
-	ax[0].set_title("Image")
-	ax[1].set_title("GT Mask")
-	ax[2].set_title("Predicted Mask")
+    # set the titles of the subplots
+    ax[0].set_title("Image")
+    ax[1].set_title("GT Mask")
+    ax[2].set_title("Predicted Mask")
 
-	# set the layout of the figure and display it
-	figure.tight_layout()
-	figure.show()
-	figure.savefig(filename)
-	plt.close()
+    # set the layout of the figure and display it
+    figure.tight_layout()
+    figure.show()
+    figure.savefig(filename)
+    plt.close()
 
 
 def set_seed(seed: int) -> None:
@@ -46,3 +45,16 @@ def set_seed(seed: int) -> None:
     # Set a fixed value for the hash seed
     os.environ["PYTHONHASHSEED"] = str(seed)
 
+
+def init_device(gpu_ids):
+    """
+    Init CUDA environment.
+
+    Parameters
+    ----------
+    gpu_ids: list of int
+        GPU indices to use
+    """
+    torch.multiprocessing.set_sharing_strategy('file_system')
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_ids)[1:-1]

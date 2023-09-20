@@ -6,10 +6,11 @@ from torch.utils.data import DataLoader, Dataset
 
 
 class MiningSectorDataset(Dataset):
-    def __init__(self, image_dir, mask_dir):
+    def __init__(self, image_dir, mask_dir, preprocessing=None):
         self.image_dir = image_dir
         self.mask_dir = mask_dir
         self.filenames = os.listdir(image_dir)[:]
+        self.preprocessing = preprocessing
     
     def __len__(self):
         return len(self.filenames)
@@ -23,6 +24,8 @@ class MiningSectorDataset(Dataset):
         image = cv2.imread(image_path)
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         mask = cv2.imread(mask_path, 0)
+
+        # todo: apply preprocessing if any
 
         # convert data
         image = torch.from_numpy(image.transpose(2, 0, 1).astype('float32'))
