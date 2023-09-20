@@ -11,6 +11,8 @@ This code implements semantic segmentation of mining areas from satellite images
 * numpy
 * matplotlib
 * hydra-core
+* omegaconf
+* tqdm
 
 Install all requirements:
 ```
@@ -22,7 +24,7 @@ pip install -r requirements.txt
 **Configuration**
 
 Configure paths, model architecture, training and test settings in `./conf/config.yaml`.
-Following structure is expected under the `data_root` directory:
+The following structure is expected under the `${data_root}` directory:
 ```
 ./data
 ├── patches_img_testset
@@ -37,7 +39,7 @@ Following structure is expected under the `data_root` directory:
 python train.py model=unet encoder="resnet34" gpu_ids="[0, 1]"
 ```
 
-The implemented models are `unet`, `unetplusplus`, `fpn`, `deeplabv3`, and `deeplabv3plus`. Checkpoints will be saved into `./checkpoints/${model}`.
+Available models are `unet`, `unetplusplus`, `fpn`, `deeplabv3`, and `deeplabv3plus`. Check multiple options of [available encoders](https://smp.readthedocs.io/en/latest/encoders.html) as well. Checkpoints will be saved into `./checkpoints/${model}`.
 
 **Evaluation**
 
