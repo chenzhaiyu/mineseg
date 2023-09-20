@@ -8,8 +8,6 @@ defaults:
 data_root: './data'
 checkpoint_dir: './checkpoints/${model}'
 checkpoint_path: '${checkpoint_dir}/checkpoint_best.pth'
-test_image_dir: '${data_root}/patches_img_testset'
-test_mask_dir: '${data_root}/patches_mask_testset'
 result_dir: './outputs/${model}'
 
 # architecture

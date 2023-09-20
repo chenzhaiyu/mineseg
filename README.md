@@ -22,11 +22,19 @@ pip install -r requirements.txt
 **Configuration**
 
 Configure paths, model architecture, training and test settings in `./conf/config.yaml`.
+Following structure is expected under the `data_root` directory:
+```
+./data
+├── patches_img_testset
+├── patches_img_trainset
+├── patches_mask_testset
+└── patches_mask_trainset
+```
 
 **Training**
 
 ```bash
-python train.py model=unet gpu_id=0
+python train.py model=unet encoder="resnet34" gpu_ids="[0, 1]"
 ```
 
 The implemented models are `unet`, `unetplusplus`, `fpn`, `deeplabv3`, and `deeplabv3plus`. Checkpoints will be saved into `./checkpoints/${model}`.
@@ -34,7 +42,7 @@ The implemented models are `unet`, `unetplusplus`, `fpn`, `deeplabv3`, and `deep
 **Evaluation**
 
 ```bash
-python test.py model=unet
+python test.py model=unet gpu_ids="[0, 1]"
 ```
 
 **Prediction**
