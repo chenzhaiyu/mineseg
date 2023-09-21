@@ -16,7 +16,7 @@ from torchmetrics import Accuracy, F1Score, Precision, Recall, ConfusionMatrix
 import segmentation_models_pytorch as smp
 
 from dataset import load_data
-from utils import print_matrix, prepare_plot, set_seed
+from utils import print_matrix, prepare_plot, set_seed, init_device
 
 @hydra.main(config_path='./conf', config_name='config', version_base='1.2')
 def predict(cfg: DictConfig):
