@@ -3,8 +3,6 @@ Prediction for multi-class mining site segmentation.
 """
 
 import os
-import logging
-from pathlib import Path
 
 import hydra
 from omegaconf import DictConfig
@@ -12,27 +10,26 @@ from tqdm import tqdm
 import numpy as np
 import torch
 import cv2
+from torch.nn import DataParallel
 import torch.nn.functional as F
 from torchmetrics import Accuracy, F1Score, Precision, Recall, ConfusionMatrix
 import segmentation_models_pytorch as smp
-from segmentation_models_pytorch.encoders import get_preprocessing_fn
 
-from dataset import MiningSectorDataset, load_data
-from utils import print_matrix, prepare_plot, set_seed
+from dataset import load_data
+from utils import print_matrix, prepare_plot, set_seed, init_device
 
 @hydra.main(config_path='./conf', config_name='config', version_base='1.2')
 def predict(cfg: DictConfig):
     """
     Prediction with one single input.
     """
-
+    # initialize device
+    init_device(cfg.gpu_ids)
+    device = torch.device('cuda' if cfg.device == 'cuda' and torch.cuda.is_available() else 'cpu')
+	
     # fix randomness
     set_seed(cfg.seed)
-
-    # specify GPU
-    os.environ['CUDA_VISIBLE_DEVICES'] = str(cfg.gpu_id)  # assume single GPU
-    device = torch.device('cuda' if cfg.device=='cuda' and torch.cuda.is_available() else 'cpu')
-
+	
     # define model
     # Unet, UnetPlusPlus, FPN, DeepLabV3, DeepLabV3Plus
     if cfg.model == 'unet':
@@ -54,6 +51,8 @@ def predict(cfg: DictConfig):
         classes=len(cfg.classes),             # model output channels (number of classes in your dataset)
         activation='softmax2d',               # activation function after the final convolution layer
     )
+    # port model to GPUs
+    model = DataParallel(model)
     model.to(device)
 
     # load example image paths
