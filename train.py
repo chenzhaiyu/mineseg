@@ -29,8 +29,10 @@ def train(cfg: DictConfig):
     set_seed(cfg.seed)
 
     # load data
-    train_dataloader, test_dataloader = load_data(root=cfg.data_root, batch_size=cfg.batch_size,
-                                                  num_workers=cfg.num_workers)
+    train_dataloader = load_data(batch_size=cfg.batch_size, num_workers=cfg.num_workers,
+                                 image_dir=cfg.train_image_dir, mask_dir=cfg.train_mask_dir)
+    test_dataloader = load_data(batch_size=cfg.batch_size, num_workers=cfg.num_workers,
+                                image_dir=cfg.test_image_dir, mask_dir=cfg.test_mask_dir)
 
     # define model: Unet, UnetPlusPlus, FPN, DeepLabV3, DeepLabV3Plus
     if cfg.model == 'unet':
