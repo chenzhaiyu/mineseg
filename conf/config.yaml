@@ -40,6 +40,7 @@ seed: 1117
 wandb: false
 wandb_entity: zhaiyu
 wandb_project: mineseg
+wandb_dir: './outputs'
 
 # hydra settings
 hydra:
