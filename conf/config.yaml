@@ -36,6 +36,11 @@ num_workers: 11
 num_examples: 1000
 seed: 1117
 
+# wandb
+wandb: false
+wandb_entity: zhaiyu
+wandb_project: mineseg
+
 # hydra settings
 hydra:
   run:

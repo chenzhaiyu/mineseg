@@ -4,6 +4,7 @@ Supervised training for multi-class mining site segmentation.
 
 import os
 
+import wandb
 import hydra
 from omegaconf import DictConfig
 from tqdm import tqdm
@@ -22,6 +23,11 @@ def train(cfg: DictConfig):
     """
     Training.
     """
+    # initialize wandb
+    wandb_mode = 'online' if cfg.wandb else 'disabled'
+    wandb.init(mode=wandb_mode, project=cfg.wandb_project, entity=cfg.wandb_entity, dir=cfg.wandb_dir)
+    wandb.save('./outputs/.hydra/*')
+
     # initialize device
     init_device(cfg.gpu_ids)
     device = torch.device('cuda' if cfg.device == 'cuda' and torch.cuda.is_available() else 'cpu')
@@ -101,6 +107,11 @@ def train(cfg: DictConfig):
         # training epoch
         model.train()
         pbar_train = tqdm(train_dataloader, desc=f'epoch {i}')
+
+        # wandb epoch logging
+        wandb.log({"epoch": i})
+        wandb.log({"learning_rate": optimizer.param_groups[0]['lr']})
+
         for (images, targets) in pbar_train:
             images = images.to(device)
             targets = targets.squeeze().to(device)
@@ -108,10 +119,27 @@ def train(cfg: DictConfig):
             optimizer.zero_grad()
             outs = model(images)
             loss_ = loss(outs, targets)
+            accuracy_ = accuracy(outs, targets)
+            mca_a_ = mca_a(outs, targets)
+            mca_i_ = mca_i(outs, targets)
+            mca_w_ = mca_w(outs, targets)
+            f1_ = f1(outs, targets)
+            precision_ = precision(outs, targets)
+            recall_ = recall(outs, targets)
+
+            # wandb training logging
+            wandb.log({"loss": loss_})
+            wandb.log({"accuracy_train": accuracy})
+            wandb.log({"mca_a_train": mca_a_})
+            wandb.log({"mca_i_train": mca_i_})
+            wandb.log({"mca_w_train": mca_w_})
+            wandb.log({"f1_train": f1_})
+            wandb.log({"precision_train": precision_})
+            wandb.log({"recall_train": recall_})
 
             pbar_train.set_postfix_str(
-                'loss={:.2f}, accuracy={:.2f}, mca_a={:.2f}, mca_i={:.2f}, mca_w={:.2f}, f1={:.2f}, precision={:.2f}, recall={:.2f}'.format(
-                    loss_, accuracy(outs, targets), mca_a(outs, targets), mca_i(outs, targets), mca_w(outs, targets) , f1(outs, targets), precision(outs, targets), recall(outs, targets)))
+                'loss={:.2f}, accuracy={:.2f}, mca_a={:.2f}, mca_i={:.2f}, mca_w={:.2f}, f1={:.2f}, precision={:.2f}, '
+                'recall={:.2f}'.format(loss_, accuracy_, mca_a_, mca_i_, mca_w_, f1_, precision_, recall_))
 
             loss_.backward()
             optimizer.step()
@@ -144,8 +172,17 @@ def train(cfg: DictConfig):
         mca_i_test /= len(pbar_test)
         mca_w_test /= len(pbar_test)
 
-        print('Test: accuracy={:.2f}, mca_a={:.2f}, mca_i={:.2f}, mca_w={:.2f}, f1={:.2f}, precision={:.2f}, recall={:.2f}'.format(accuracy_test, mca_a_test, mca_i_test, mca_w_test, f1_test,
-                                                                                         precision_test, recall_test))
+        # wandb evaluation logging
+        wandb.log({"accuracy_test": accuracy_test})
+        wandb.log({"mca_a_test": mca_a_test})
+        wandb.log({"mca_i_test": mca_i_test})
+        wandb.log({"mca_w_test": mca_w_test})
+        wandb.log({"f1_test": f1_test})
+        wandb.log({"precision_test": precision_test})
+        wandb.log({"recall_test": recall_test})
+
+        print('Test: accuracy={:.2f}, mca_a={:.2f}, mca_i={:.2f}, mca_w={:.2f}, f1={:.2f}, precision={:.2f}, '
+              'recall={:.2f}'.format(accuracy_test, mca_a_test, mca_i_test, mca_w_test, f1_test, precision_test, recall_test))
         print(f'Confusion matrix:')
         print_matrix(confusion_test)
 
