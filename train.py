@@ -9,6 +9,7 @@ from omegaconf import DictConfig
 from tqdm import tqdm
 import torch
 from torchmetrics import Accuracy, F1Score, Precision, Recall, ConfusionMatrix
+from torchmetrics.classification import MulticlassAccuracy
 import segmentation_models_pytorch as smp
 from torch.nn import DataParallel
 
@@ -72,6 +73,9 @@ def train(cfg: DictConfig):
 
     # define metrics
     accuracy = Accuracy(task="multiclass", num_classes=len(cfg.classes)).to(device)
+    mca_a = MulticlassAccuracy(num_classes=len(cfg.classes), average="macro").to(device)
+    mca_i = MulticlassAccuracy(num_classes=len(cfg.classes), average="micro").to(device)
+    mca_w = MulticlassAccuracy(num_classes=len(cfg.classes), average="weighted").to(device)
     f1 = F1Score(task="multiclass", num_classes=len(cfg.classes)).to(device)
     precision = Precision(task="multiclass", average='macro', num_classes=len(cfg.classes)).to(device)
     recall = Recall(task="multiclass", average='macro', num_classes=len(cfg.classes)).to(device)
@@ -106,8 +110,8 @@ def train(cfg: DictConfig):
             loss_ = loss(outs, targets)
 
             pbar_train.set_postfix_str(
-                'loss={:.2f}, accuracy={:.2f}, f1={:.2f}, precision={:.2f}, recall={:.2f}'.format(
-                    loss_, accuracy(outs, targets), f1(outs, targets), precision(outs, targets), recall(outs, targets)))
+                'loss={:.2f}, accuracy={:.2f}, mca_a={:.2f}, mca_i={:.2f}, mca_w={:.2f}, f1={:.2f}, precision={:.2f}, recall={:.2f}'.format(
+                    loss_, accuracy(outs, targets), mca_a(outs, targets), mca_i(outs, targets), mca_w(outs, targets) , f1(outs, targets), precision(outs, targets), recall(outs, targets)))
 
             loss_.backward()
             optimizer.step()
@@ -116,7 +120,7 @@ def train(cfg: DictConfig):
         torch.cuda.empty_cache()
         model.eval()
         pbar_test = tqdm(test_dataloader)
-        accuracy_test, f1_test, precision_test, recall_test, confusion_test = 0, 0, 0, 0, 0
+        accuracy_test, f1_test, precision_test, recall_test, confusion_test, mca_a_test, mca_i_test, mca_w_test = 0, 0, 0, 0, 0, 0, 0, 0
         for (images, targets) in pbar_test:
             with torch.no_grad():
                 images = images.to(device)
@@ -124,6 +128,9 @@ def train(cfg: DictConfig):
                 outs = model(images)
 
                 accuracy_test += accuracy(outs, targets)
+                mca_a_test += mca_a(outs, targets)
+                mca_i_test += mca_i(outs, targets)
+                mca_w_test += mca_w(outs, targets)
                 f1_test += f1(outs, targets)
                 precision_test += precision(outs, targets)
                 recall_test += recall(outs, targets)
@@ -133,8 +140,11 @@ def train(cfg: DictConfig):
         f1_test /= len(pbar_test)
         precision_test /= len(pbar_test)
         recall_test /= len(pbar_test)
+        mca_a_test /= len(pbar_test)
+        mca_i_test /= len(pbar_test)
+        mca_w_test /= len(pbar_test)
 
-        print('Test: accuracy={:.2f}, f1={:.2f}, precision={:.2f}, recall={:.2f}'.format(accuracy_test, f1_test,
+        print('Test: accuracy={:.2f}, mca_a={:.2f}, mca_i={:.2f}, mca_w={:.2f}, f1={:.2f}, precision={:.2f}, recall={:.2f}'.format(accuracy_test, mca_a_test, mca_i_test, mca_w_test, f1_test,
                                                                                          precision_test, recall_test))
         print(f'Confusion matrix:')
         print_matrix(confusion_test)
@@ -144,15 +154,15 @@ def train(cfg: DictConfig):
             'epoch': i,
             'state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict(),
-            'accuracy': accuracy_test,
+            'acc. macro': mca_a,
         }
         if not os.path.exists(f'{cfg.checkpoint_dir}'):
             os.makedirs(f'{cfg.checkpoint_dir}')
         torch.save(state, f'{cfg.checkpoint_dir}/checkpoint_{i}.pth')
-        if accuracy_test > best_accuracy:
+        if mca_a_test > best_accuracy:
             print('checkpoint saved...')
             torch.save(state, f'{cfg.checkpoint_path}')
-            best_accuracy = accuracy_test
+            best_accuracy = mca_a_test
 
 
 if __name__ == '__main__':
