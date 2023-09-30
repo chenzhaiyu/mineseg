@@ -2,6 +2,8 @@
 Testing for multi-class mining site segmentation.
 """
 
+import logging
+
 import hydra
 from omegaconf import DictConfig
 from tqdm import tqdm
@@ -19,6 +21,9 @@ def test(cfg: DictConfig):
     """
     Testing.
     """
+    # initialize logging
+    logger = logging.getLogger('Test')
+
     # initialize device
     init_device(cfg.gpu_ids)
     device = torch.device('cuda' if cfg.device == 'cuda' and torch.cuda.is_available() else 'cpu')
@@ -43,13 +48,13 @@ def test(cfg: DictConfig):
     elif cfg.model == 'deeplabv3plus':
         _model = smp.DeepLabV3Plus
     else:
-        raise ValueError('unexpected model architecture')    
+        raise ValueError('unexpected model architecture')
     model = _model(
-        encoder_name=cfg.encoder,             # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
+        encoder_name=cfg.encoder,  # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
         encoder_weights=cfg.encoder_weights,  # use `imagenet` pre-trained weights for encoder initialization
-        in_channels=cfg.in_channel,           # model input channels (1 for gray-scale images, 3 for RGB, etc.)
-        classes=len(cfg.classes),             # model output channels (number of classes in your dataset)
-        activation='softmax2d',               # activation function after the final convolution layer
+        in_channels=cfg.in_channel,  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
+        classes=len(cfg.classes),  # model output channels (number of classes in your dataset)
+        activation='softmax2d',  # activation function after the final convolution layer
     )
     # port model to GPUs
     model = DataParallel(model)
@@ -67,7 +72,7 @@ def test(cfg: DictConfig):
     confusion_matrix = ConfusionMatrix(task="multiclass", num_classes=len(cfg.classes)).to(device)
 
     # start evaluation
-    print('start evaluation...')
+    logger.info('Start evaluation...')
 
     # evaluation epoch
     model.eval()
@@ -90,7 +95,8 @@ def test(cfg: DictConfig):
     precision_test /= len(pbar_test)
     recall_test /= len(pbar_test)
 
-    print('Test: accuracy={:.2f}, f1={:.2f}, precision={:.2f}, recall={:.2f}'.format(accuracy_test, f1_test, precision_test, recall_test))
+    print('Test: accuracy={:.2f}, f1={:.2f}, precision={:.2f}, recall={:.2f}'.format(accuracy_test, f1_test,
+                                                                                     precision_test, recall_test))
     print(f'Confusion matrix:')
     print_matrix(confusion_test)
 

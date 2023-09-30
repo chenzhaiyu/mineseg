@@ -25,16 +25,23 @@ activation: 'softmax2d'  # could be None for logits or 'softmax2d' for multiclas
 device: 'cuda'
 
 # training & testing
-warm: false
+warm: false                       # warm start from checkpoint
+warm_optimizer: true              # load optimizer from checkpoint if available
+warm_scheduler: true              # load scheduler from checkpoint if available
 freeze_encoder: false
 gpu_ids: [0, 1, 2, 3]
 num_epochs: 50
-lr: 0.0001
 weight_decay: 0.00001
 batch_size: 256
 num_workers: 11
 num_examples: 1000
 seed: 1117
+lr: 1e-3
+scheduler:
+  base_lr: 1e-4
+  max_lr: ${lr}
+  step_size_up: 2000
+  mode: triangular
 
 # wandb
 wandb: false

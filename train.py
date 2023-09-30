@@ -3,6 +3,7 @@ Supervised training for multi-class mining site segmentation.
 """
 
 import os
+import logging
 
 import wandb
 import hydra
@@ -23,7 +24,8 @@ def train(cfg: DictConfig):
     """
     Training.
     """
-    # initialize wandb
+    # initialize logging
+    logger = logging.getLogger('Train')
     wandb_mode = 'online' if cfg.wandb else 'disabled'
     wandb.init(mode=wandb_mode, project=cfg.wandb_project, entity=cfg.wandb_entity, dir=cfg.wandb_dir)
     wandb.save('./outputs/.hydra/*')
@@ -31,9 +33,11 @@ def train(cfg: DictConfig):
     # initialize device
     init_device(cfg.gpu_ids)
     device = torch.device('cuda' if cfg.device == 'cuda' and torch.cuda.is_available() else 'cpu')
+    logger.info(f"Device initialized: " + f"CUDA: {cfg.gpu_ids}" if cfg.use_cuda else "CPU")
 
     # fix randomness
     set_seed(cfg.seed)
+    logger.info(f"Random seed set to {cfg.seed}")
 
     # load data
     train_dataloader = load_data(batch_size=cfg.batch_size, num_workers=cfg.num_workers,
@@ -64,6 +68,7 @@ def train(cfg: DictConfig):
 
     # freeze encoder if specified
     if cfg.freeze_encoder:
+        logger.info(f'Freezing encoder')
         for param in model.encoder.parameters():
             param.requires_grad = False
 
@@ -74,8 +79,11 @@ def train(cfg: DictConfig):
     # define loss
     loss = smp.losses.DiceLoss(mode='multiclass')
 
-    # define optimizer
+    # define optimizer and scheduler
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
+    scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=cfg.scheduler.base_lr, max_lr=cfg.scheduler.max_lr,
+                                                  step_size_up=cfg.scheduler.step_size_up, mode=cfg.scheduler.mode,
+                                                  cycle_momentum=False)
 
     # define metrics
     accuracy = Accuracy(task="multiclass", num_classes=len(cfg.classes)).to(device)
@@ -91,15 +99,31 @@ def train(cfg: DictConfig):
     if cfg.warm:
         state = torch.load(cfg.checkpoint_path)
         model.load_state_dict(state['state_dict'])
-        optimizer.load_state_dict(state['optimizer'])
+        if state['epoch'] > cfg.num_epochs:
+            logger.info(f'Expected epoch reached from checkpoint')
+            return
         epoch_generator = range(state['epoch'] + 1, cfg.num_epochs)
         best_accuracy = state['accuracy']
-        print('resume training...')
+        logger.info(f'Resuming from {cfg.checkpoint_path}')
+
+        if cfg.warm_optimizer:
+            try:
+                optimizer.load_state_dict(state['optimizer'])
+                logger.info(f'Optimizer loaded from checkpoint')
+            except (KeyError, ValueError) as error:
+                logger.warning(f'Optimizer not loaded from checkpoint: {error}')
+
+        if cfg.warm_scheduler:
+            try:
+                scheduler.load_state_dict(state['scheduler'])
+                logger.info(f'Scheduler loaded from checkpoint')
+            except (KeyError, ValueError) as error:
+                logger.warning(f'Scheduler not loaded from checkpoint: {error}')
 
     else:
         epoch_generator = range(cfg.num_epochs)
         best_accuracy = 0
-        print('start training...')
+        logger.info('Start training...')
 
     # start training
     for i in epoch_generator:
@@ -143,6 +167,7 @@ def train(cfg: DictConfig):
 
             loss_.backward()
             optimizer.step()
+            scheduler.step()
 
         # evaluation epoch
         torch.cuda.empty_cache()
@@ -191,14 +216,15 @@ def train(cfg: DictConfig):
             'epoch': i,
             'state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict(),
+            'scheduler': scheduler.state_dict(),
             'acc. macro': mca_a,
         }
         if not os.path.exists(f'{cfg.checkpoint_dir}'):
             os.makedirs(f'{cfg.checkpoint_dir}')
         torch.save(state, f'{cfg.checkpoint_dir}/checkpoint_{i}.pth')
         if mca_a_test > best_accuracy:
-            print('checkpoint saved...')
             torch.save(state, f'{cfg.checkpoint_path}')
+            logger.info(f'Saving checkpoint to {cfg.checkpoint_path}.')
             best_accuracy = mca_a_test
 
 
