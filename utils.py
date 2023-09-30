@@ -46,15 +46,19 @@ def set_seed(seed: int) -> None:
     os.environ["PYTHONHASHSEED"] = str(seed)
 
 
-def init_device(gpu_ids):
+def init_device(use_cuda, gpu_ids):
     """
     Init CUDA environment.
 
     Parameters
     ----------
+    use_cuda: bool
+        Use CUDA if set True
     gpu_ids: list of int
         GPU indices to use
     """
     torch.multiprocessing.set_sharing_strategy('file_system')
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_ids)[1:-1]
+
+    return torch.device('cuda' if use_cuda and torch.cuda.is_available() else 'cpu')

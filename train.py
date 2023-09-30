@@ -31,8 +31,7 @@ def train(cfg: DictConfig):
     wandb.save('./outputs/.hydra/*')
 
     # initialize device
-    init_device(cfg.gpu_ids)
-    device = torch.device('cuda' if cfg.device == 'cuda' and torch.cuda.is_available() else 'cpu')
+    device = init_device(cfg.use_cuda, cfg.gpu_ids)
     logger.info(f"Device initialized: " + f"CUDA: {cfg.gpu_ids}" if cfg.use_cuda else "CPU")
 
     # fix randomness
