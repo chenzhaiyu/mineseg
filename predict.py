@@ -1,5 +1,5 @@
 """
-Prediction for multi-class mining site segmentation.
+Prediction (visualization) for multi-class mining site segmentation.
 """
 
 import os
@@ -11,12 +11,10 @@ import numpy as np
 import torch
 import cv2
 from torch.nn import DataParallel
-import torch.nn.functional as F
-from torchmetrics import Accuracy, F1Score, Precision, Recall, ConfusionMatrix
+from torchmetrics import Accuracy
 import segmentation_models_pytorch as smp
 
-from dataset import load_data
-from utils import print_matrix, prepare_plot, set_seed, init_device
+from utils import prepare_plot, set_seed, init_device
 
 @hydra.main(config_path='./conf', config_name='config', version_base='1.2')
 def predict(cfg: DictConfig):
@@ -24,12 +22,11 @@ def predict(cfg: DictConfig):
     Prediction with one single input.
     """
     # initialize device
-    init_device(cfg.gpu_ids)
-    device = torch.device('cuda' if cfg.device == 'cuda' and torch.cuda.is_available() else 'cpu')
-	
+    device = init_device(cfg.use_cuda, cfg.gpu_ids)
+
     # fix randomness
     set_seed(cfg.seed)
-	
+
     # define model
     # Unet, UnetPlusPlus, FPN, DeepLabV3, DeepLabV3Plus
     if cfg.model == 'unet':
@@ -52,7 +49,7 @@ def predict(cfg: DictConfig):
         activation='softmax2d',               # activation function after the final convolution layer
     )
     # port model to GPUs
-    model = DataParallel(model)
+    model = DataParallel(model, device_ids=cfg.gpu_ids)
     model.to(device)
 
     # load example image paths
@@ -94,9 +91,9 @@ def predict(cfg: DictConfig):
 
         # make the prediction and convert the result to a NumPy array
         with torch.no_grad():
-	        predMask = model(image).squeeze()
-	        predMask = torch.argmax(predMask, dim=0)
-	        predMask = predMask.cpu().numpy()
+            predMask = model(image).squeeze()
+            predMask = torch.argmax(predMask, dim=0)
+            predMask = predMask.cpu().numpy()
 
         # convert prediction to integers
         predMask = predMask.astype(np.uint8)

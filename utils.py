@@ -58,7 +58,10 @@ def init_device(use_cuda, gpu_ids):
         GPU indices to use
     """
     torch.multiprocessing.set_sharing_strategy('file_system')
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_ids)[1:-1]
 
-    return torch.device('cuda' if use_cuda and torch.cuda.is_available() else 'cpu')
+    # does not work after import torch with PyTorch 2.0
+    # os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+    # os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_ids)[1:-1]
+
+    # the first cuda device scatters and gathers data
+    return torch.device(f'cuda:{gpu_ids[0]}' if use_cuda and torch.cuda.is_available() else 'cpu')

@@ -57,7 +57,7 @@ def test(cfg: DictConfig):
         activation='softmax2d',  # activation function after the final convolution layer
     )
     # port model to GPUs
-    model = DataParallel(model)
+    model = DataParallel(model, device_ids=cfg.gpu_ids)
     model.to(device)
 
     # load checkpoint
