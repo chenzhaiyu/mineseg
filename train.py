@@ -5,7 +5,7 @@ Supervised training for multi-class mining site segmentation.
 import os
 import logging
 
-# import wandb
+import wandb
 import hydra
 from omegaconf import DictConfig
 from tqdm import tqdm
@@ -27,8 +27,8 @@ def train(cfg: DictConfig):
     # initialize logging
     logger = logging.getLogger('Train')
     wandb_mode = 'online' if cfg.wandb else 'disabled'
-    # wandb.init(mode=wandb_mode, project=cfg.wandb_project, entity=cfg.wandb_entity, dir=cfg.wandb_dir)
-    # wandb.save('./outputs/.hydra/*')
+    wandb.init(mode=wandb_mode, project=cfg.wandb_project, entity=cfg.wandb_entity, dir=cfg.wandb_dir)
+    wandb.save('./outputs/.hydra/*')
 
     # initialize device
     device = init_device(cfg.use_cuda, cfg.gpu_ids)
@@ -140,8 +140,8 @@ def train(cfg: DictConfig):
         pbar_train = tqdm(train_dataloader, desc=f'epoch {i}')
 
         # wandb epoch logging
-        # wandb.log({"epoch": i})
-        # wandb.log({"learning_rate": optimizer.param_groups[0]['lr']})
+        wandb.log({"epoch": i})
+        wandb.log({"learning_rate": optimizer.param_groups[0]['lr']})
 
         for (images, targets) in pbar_train:
             images = images.to(device)
@@ -159,14 +159,14 @@ def train(cfg: DictConfig):
             recall_ = recall(outs, targets)
 
             # wandb training logging
-            # wandb.log({"loss": loss_})
-            # wandb.log({"accuracy_train": accuracy})
-            # wandb.log({"mca_a_train": mca_a_})
-            # wandb.log({"mca_i_train": mca_i_})
-            # wandb.log({"mca_w_train": mca_w_})
-            # wandb.log({"f1_train": f1_})
-            # wandb.log({"precision_train": precision_})
-            # wandb.log({"recall_train": recall_})
+            wandb.log({"loss": loss_})
+            wandb.log({"accuracy_train": accuracy})
+            wandb.log({"mca_a_train": mca_a_})
+            wandb.log({"mca_i_train": mca_i_})
+            wandb.log({"mca_w_train": mca_w_})
+            wandb.log({"f1_train": f1_})
+            wandb.log({"precision_train": precision_})
+            wandb.log({"recall_train": recall_})
 
             pbar_train.set_postfix_str(
                 'loss={:.2f}, accuracy={:.2f}, mca_a={:.2f}, mca_i={:.2f}, mca_w={:.2f}, f1={:.2f}, precision={:.2f}, '
@@ -205,13 +205,13 @@ def train(cfg: DictConfig):
         mca_w_test /= len(pbar_test)
 
         # wandb evaluation logging
-        # wandb.log({"accuracy_test": accuracy_test})
-        # wandb.log({"mca_a_test": mca_a_test})
-        # wandb.log({"mca_i_test": mca_i_test})
-        # wandb.log({"mca_w_test": mca_w_test})
-        # wandb.log({"f1_test": f1_test})
-        # wandb.log({"precision_test": precision_test})
-        # wandb.log({"recall_test": recall_test})
+        wandb.log({"accuracy_test": accuracy_test})
+        wandb.log({"mca_a_test": mca_a_test})
+        wandb.log({"mca_i_test": mca_i_test})
+        wandb.log({"mca_w_test": mca_w_test})
+        wandb.log({"f1_test": f1_test})
+        wandb.log({"precision_test": precision_test})
+        wandb.log({"recall_test": recall_test})
 
         print('Test: accuracy={:.2f}, mca_a={:.2f}, mca_i={:.2f}, mca_w={:.2f}, f1={:.2f}, precision={:.2f}, '
               'recall={:.2f}'.format(accuracy_test, mca_a_test, mca_i_test, mca_w_test, f1_test, precision_test, recall_test))
