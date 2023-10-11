@@ -13,7 +13,7 @@ import torch
 from torchmetrics import Accuracy, F1Score, Precision, Recall, ConfusionMatrix
 from torchmetrics.classification import MulticlassAccuracy
 import segmentation_models_pytorch as smp
-from torch.nn import DataParallel
+from torch.nn import DataParallel, CrossEntropyLoss
 
 from dataset import load_data
 from utils import print_matrix, set_seed, init_device
@@ -56,7 +56,7 @@ def train(cfg: DictConfig):
     elif cfg.model == 'deeplabv3plus':
         _model = smp.DeepLabV3Plus
     else:
-        raise ValueError('unexpected model architecture')
+        raise ValueError(f'Unexpected model architecture: {cfg.model}')
     model = _model(
         encoder_name=cfg.encoder,             # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
         encoder_weights=cfg.encoder_weights,  # use `imagenet` pre-trained weights for encoder initialization
@@ -76,10 +76,18 @@ def train(cfg: DictConfig):
     model.to(device)
 
     # define loss
-    loss = smp.losses.DiceLoss(mode='multiclass')
+    if cfg.loss == 'dice':
+        loss = smp.losses.DiceLoss(mode='multiclass')
+    elif cfg.loss == 'focal':
+        loss = smp.losses.FocalLoss(mode='multiclass')
+    elif cfg.loss == 'ce':
+        loss = CrossEntropyLoss()
+    else:
+        raise ValueError(f'Unexpected loss: {cfg.loss}')
 
     # define optimizer and scheduler
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
+    # https://github.com/pytorch/pytorch/issues/90414 & https://github.com/pytorch/pytorch/pull/91400
     scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=cfg.scheduler.base_lr, max_lr=cfg.scheduler.max_lr,
                                                   step_size_up=cfg.scheduler.step_size_up, mode=cfg.scheduler.mode,
                                                   cycle_momentum=False)
