@@ -46,7 +46,7 @@ def predict(cfg: DictConfig):
         encoder_weights=cfg.encoder_weights,  # use `imagenet` pre-trained weights for encoder initialization
         in_channels=cfg.in_channel,           # model input channels (1 for gray-scale images, 3 for RGB, etc.)
         classes=len(cfg.classes),             # model output channels (number of classes in your dataset)
-        activation='softmax2d',               # activation function after the final convolution layer
+        activation=cfg.activation,            # activation function after the final convolution layer
     )
     # port model to GPUs
     model = DataParallel(model, device_ids=cfg.gpu_ids)

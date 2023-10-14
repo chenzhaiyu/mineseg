@@ -50,11 +50,11 @@ def test(cfg: DictConfig):
     else:
         raise ValueError('unexpected model architecture')
     model = _model(
-        encoder_name=cfg.encoder,  # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
+        encoder_name=cfg.encoder,    # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
         encoder_weights=cfg.encoder_weights,  # use `imagenet` pre-trained weights for encoder initialization
         in_channels=cfg.in_channel,  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
-        classes=len(cfg.classes),  # model output channels (number of classes in your dataset)
-        activation='softmax2d',  # activation function after the final convolution layer
+        classes=len(cfg.classes),    # model output channels (number of classes in your dataset)
+        activation=cfg.activation,   # activation function after the final convolution layer
     )
     # port model to GPUs
     model = DataParallel(model, device_ids=cfg.gpu_ids)
