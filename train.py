@@ -16,7 +16,7 @@ import segmentation_models_pytorch as smp
 from torch.nn import DataParallel, CrossEntropyLoss
 
 from dataset import load_data
-from utils import print_matrix, set_seed, init_device
+from utils import matrix_to_string, set_seed, init_device
 
 
 @hydra.main(config_path='./conf', config_name='config', version_base='1.2')
@@ -204,6 +204,12 @@ def train(cfg: DictConfig):
         mca_i_test /= len(pbar_test)
         mca_w_test /= len(pbar_test)
 
+        # console evaluation logging
+        logger.info('Test: accuracy={:.2f}, mca_a={:.2f}, mca_i={:.2f}, mca_w={:.2f}, f1={:.2f}, precision={:.2f}, '
+                    'recall={:.2f}'.format(accuracy_test, mca_a_test, mca_i_test, mca_w_test, f1_test, precision_test,
+                                           recall_test))
+        logger.info(f'Confusion matrix: {matrix_to_string(confusion_test)}')
+
         # wandb evaluation logging
         wandb.log({"accuracy_test": accuracy_test})
         wandb.log({"mca_a_test": mca_a_test})
@@ -213,10 +219,22 @@ def train(cfg: DictConfig):
         wandb.log({"precision_test": precision_test})
         wandb.log({"recall_test": recall_test})
 
-        print('Test: accuracy={:.2f}, mca_a={:.2f}, mca_i={:.2f}, mca_w={:.2f}, f1={:.2f}, precision={:.2f}, '
-              'recall={:.2f}'.format(accuracy_test, mca_a_test, mca_i_test, mca_w_test, f1_test, precision_test, recall_test))
-        print(f'Confusion matrix:')
-        print_matrix(confusion_test)
+        # initialize empty lists for ground truth labels and predictions
+        truth_labels = []
+        predicted_labels = []
+
+        # iterate through the confusion matrix to extract labels
+        for _i in range(len(cfg.classes)):
+            for _j in range(len(cfg.classes)):
+                count = confusion_test[_i, _j]
+                # add 'count' ground truth labels and predictions for this cell
+                truth_labels.extend([_i] * count)
+                predicted_labels.extend([_j] * count)
+
+        # wandb confusion matrix logging
+        wandb.log({"eval_confusion_matrix": wandb.plot.confusion_matrix(probs=None, y_true=truth_labels,
+                                                                        preds=predicted_labels,
+                                                                        class_names=cfg.classes)})
 
         # save checkpoint
         state = {

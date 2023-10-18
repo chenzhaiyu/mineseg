@@ -11,10 +11,10 @@ import numpy as np
 import torch
 import cv2
 from torch.nn import DataParallel
-from torchmetrics import Accuracy
 import segmentation_models_pytorch as smp
 
 from utils import prepare_plot, set_seed, init_device
+
 
 @hydra.main(config_path='./conf', config_name='config', version_base='1.2')
 def predict(cfg: DictConfig):
@@ -62,9 +62,6 @@ def predict(cfg: DictConfig):
     # start evaluation
     print('start prediction...')
 
-    # define metrics
-    accuracy = Accuracy(task="multiclass", num_classes=len(cfg.classes)).to(device)
-
     # iterate over the randomly selected test image paths
     model.eval()
     for filename in tqdm(filenames):
@@ -78,10 +75,10 @@ def predict(cfg: DictConfig):
         orig = image.copy().astype(np.uint8)
 
         # find the filename and generate the path to ground truth mask
-        groundTruthPath = os.path.join(cfg.test_mask_dir, filename)
+        gt_path = os.path.join(cfg.test_mask_dir, filename)
 
         # load the ground-truth segmentation mask in grayscale mode and resize it
-        gtMask = cv2.imread(groundTruthPath, 0)
+        gt_mask = cv2.imread(gt_path, 0)
 
         # make the channel axis to be the leading one, add a batch
         # dimension, create a PyTorch tensor, and flash it to the current device
@@ -91,17 +88,17 @@ def predict(cfg: DictConfig):
 
         # make the prediction and convert the result to a NumPy array
         with torch.no_grad():
-            predMask = model(image).squeeze()
-            predMask = torch.argmax(predMask, dim=0)
-            predMask = predMask.cpu().numpy()
+            pred_mask = model(image).squeeze()
+            pred_mask = torch.argmax(pred_mask, dim=0)
+            pred_mask = pred_mask.cpu().numpy()
 
         # convert prediction to integers
-        predMask = predMask.astype(np.uint8)
+        pred_mask = pred_mask.astype(np.uint8)
 
         # prepare a plot for visualization
         if not os.path.exists(f'{cfg.result_dir}'):
             os.makedirs(f'{cfg.result_dir}')
-        prepare_plot(os.path.join(cfg.result_dir, filename), orig, gtMask, predMask)
+        prepare_plot(os.path.join(cfg.result_dir, filename), orig, gt_mask, pred_mask)
 
 
 if __name__ == '__main__':

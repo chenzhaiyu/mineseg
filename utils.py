@@ -5,8 +5,8 @@ import os
 import random
 
 
-def print_matrix(matrix):
-    print('\n'.join([''.join(['{:10}'.format(item) for item in row]) for row in matrix]))
+def matrix_to_string(matrix):
+    return '\n'.join([''.join(['{:10}'.format(item) for item in row]) for row in matrix])
 
 
 def prepare_plot(filename, origImage, origMask, predMask):

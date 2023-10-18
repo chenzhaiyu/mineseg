@@ -13,7 +13,7 @@ import segmentation_models_pytorch as smp
 from torch.nn import DataParallel
 
 from dataset import load_data
-from utils import print_matrix, set_seed, init_device
+from utils import matrix_to_string, set_seed, init_device
 
 
 @hydra.main(config_path='./conf', config_name='config', version_base='1.2')
@@ -50,11 +50,11 @@ def test(cfg: DictConfig):
     else:
         raise ValueError('unexpected model architecture')
     model = _model(
-        encoder_name=cfg.encoder,    # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
+        encoder_name=cfg.encoder,             # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
         encoder_weights=cfg.encoder_weights,  # use `imagenet` pre-trained weights for encoder initialization
-        in_channels=cfg.in_channel,  # model input channels (1 for gray-scale images, 3 for RGB, etc.)
-        classes=len(cfg.classes),    # model output channels (number of classes in your dataset)
-        activation=cfg.activation,   # activation function after the final convolution layer
+        in_channels=cfg.in_channel,           # model input channels (1 for gray-scale images, 3 for RGB, etc.)
+        classes=len(cfg.classes),             # model output channels (number of classes in your dataset)
+        activation=cfg.activation,            # activation function after the final convolution layer
     )
     # port model to GPUs
     model = DataParallel(model, device_ids=cfg.gpu_ids)
@@ -95,10 +95,9 @@ def test(cfg: DictConfig):
     precision_test /= len(pbar_test)
     recall_test /= len(pbar_test)
 
-    print('Test: accuracy={:.2f}, f1={:.2f}, precision={:.2f}, recall={:.2f}'.format(accuracy_test, f1_test,
-                                                                                     precision_test, recall_test))
-    print(f'Confusion matrix:')
-    print_matrix(confusion_test)
+    logger.info('Test: accuracy={:.2f}, f1={:.2f}, precision={:.2f}, recall={:.2f}'.format(accuracy_test, f1_test,
+                                                                                           precision_test, recall_test))
+    logger.info(f'Confusion matrix: {matrix_to_string(confusion_test)}')
 
 
 if __name__ == '__main__':
