@@ -18,6 +18,7 @@ Install all requirements:
 ```
 conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
 pip install -r requirements.txt
+apt-get update && apt-get install libgl1
 ```
 
 ## Usage
@@ -37,7 +38,7 @@ The following structure is expected under the `${data_root}` directory:
 **Training**
 
 ```bash
-python train.py model=unet encoder="resnet50" gpu_ids="[0, 1]"
+python train.py model=unet encoder="resnet50" gpu_ids="[0, 1]" run_suffix='_res50' wandb=True
 ```
 
 Available models are `unet`, `unetplusplus`, `fpn`, `deeplabv3`, and `deeplabv3plus`. Check multiple options of [available encoders](https://smp.readthedocs.io/en/latest/encoders.html) as well. Checkpoints will be saved into `./checkpoints/${model}`.
@@ -54,5 +55,5 @@ python test.py model=unet gpu_ids="[0, 1]"
 python predict.py model=unet
 ```
 
-Prediction results will be saved into `./outputs/${model}`.
+Prediction results will be saved into `./outputs/${model}${run_suffix}`.
 
