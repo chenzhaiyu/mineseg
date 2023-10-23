@@ -32,7 +32,7 @@ SHELL ["conda", "run", "-n", "mineseg", "/bin/bash", "-c"]
 RUN apt update && apt install ffmpeg libsm6 libxext6  -y
 
 # install python packages
-RUN conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
+RUN conda install pytorch torchvision pytorch-cuda=11.8 -c pytorch -c nvidia
 RUN pip install -r requirements.txt
 
 

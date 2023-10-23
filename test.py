@@ -8,7 +8,8 @@ import hydra
 from omegaconf import DictConfig
 from tqdm import tqdm
 import torch
-from torchmetrics import Accuracy, F1Score, Precision, Recall, ConfusionMatrix
+from torchmetrics import F1Score, Precision, Recall, ConfusionMatrix
+from torchmetrics.classification import MulticlassAccuracy
 import segmentation_models_pytorch as smp
 from torch.nn import DataParallel
 
@@ -65,7 +66,9 @@ def test(cfg: DictConfig):
     model.load_state_dict(state['state_dict'])
 
     # define metrics
-    accuracy = Accuracy(task="multiclass", num_classes=len(cfg.classes)).to(device)
+    mca_a = MulticlassAccuracy(num_classes=len(cfg.classes), average="macro").to(device)
+    mca_i = MulticlassAccuracy(num_classes=len(cfg.classes), average="micro").to(device)
+    mca_w = MulticlassAccuracy(num_classes=len(cfg.classes), average="weighted").to(device)
     f1 = F1Score(task="multiclass", num_classes=len(cfg.classes)).to(device)
     precision = Precision(task="multiclass", average='macro', num_classes=len(cfg.classes)).to(device)
     recall = Recall(task="multiclass", average='macro', num_classes=len(cfg.classes)).to(device)
@@ -77,26 +80,31 @@ def test(cfg: DictConfig):
     # evaluation epoch
     model.eval()
     pbar_test = tqdm(test_dataloader)
-    accuracy_test, f1_test, precision_test, recall_test, confusion_test = 0, 0, 0, 0, 0
+    f1_test, precision_test, recall_test, confusion_test, mca_a_test, mca_i_test, mca_w_test = 0, 0, 0, 0, 0, 0, 0
     for (images, targets) in pbar_test:
         with torch.no_grad():
             images = images.to(device)
             targets = targets.squeeze().to(device)
             outs = model(images)
 
-            accuracy_test += accuracy(outs, targets)
+            mca_a_test += mca_a(outs, targets)
+            mca_i_test += mca_i(outs, targets)
+            mca_w_test += mca_w(outs, targets)
             f1_test += f1(outs, targets)
             precision_test += precision(outs, targets)
             recall_test += recall(outs, targets)
             confusion_test += confusion_matrix(outs, targets)
 
-    accuracy_test /= len(pbar_test)
     f1_test /= len(pbar_test)
     precision_test /= len(pbar_test)
     recall_test /= len(pbar_test)
+    mca_a_test /= len(pbar_test)
+    mca_i_test /= len(pbar_test)
+    mca_w_test /= len(pbar_test)
 
-    logger.info('Test: accuracy={:.2f}, f1={:.2f}, precision={:.2f}, recall={:.2f}'.format(accuracy_test, f1_test,
-                                                                                           precision_test, recall_test))
+    logger.info('Test: mca_a={:.2f}, mca_i={:.2f}, mca_w={:.2f}, f1={:.2f}, precision={:.2f}, '
+                'recall={:.2f}'.format(mca_a_test, mca_i_test, mca_w_test, f1_test, precision_test,
+                                       recall_test))
     logger.info(f'Confusion matrix: {matrix_to_string(confusion_test)}')
 
 

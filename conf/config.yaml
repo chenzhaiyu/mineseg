@@ -18,10 +18,10 @@ result_dir: './outputs/${model}${run_suffix}'
 # architecture
 in_channel: 3
 model: 'unet'
-encoder: 'resnet34'
+encoder: 'resnet50'               # https://smp.readthedocs.io/en/latest/encoders.html
 encoder_weights: 'imagenet'
 classes: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-activation: null                  # null for logits or softmax2d for multiclass segmentation
+activation: null                  # null for logits (softmax to be computed in loss)
 
 # training & testing
 use_cuda: true
@@ -29,7 +29,7 @@ warm: false                       # warm start from checkpoint
 warm_optimizer: true              # load optimizer from checkpoint if available
 warm_scheduler: true              # load scheduler from checkpoint if available
 freeze_encoder: false
-gpu_ids: [0, 1, 2, 3]
+gpu_ids: [0, 1]
 num_epochs: 50
 weight_decay: 0.00001
 batch_size: 256

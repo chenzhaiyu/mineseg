@@ -10,7 +10,7 @@ import hydra
 from omegaconf import DictConfig
 from tqdm import tqdm
 import torch
-from torchmetrics import Accuracy, F1Score, Precision, Recall, ConfusionMatrix
+from torchmetrics import F1Score, Precision, Recall, ConfusionMatrix
 from torchmetrics.classification import MulticlassAccuracy
 import segmentation_models_pytorch as smp
 from torch.nn import DataParallel, CrossEntropyLoss
@@ -93,7 +93,6 @@ def train(cfg: DictConfig):
                                                   cycle_momentum=False)
 
     # define metrics
-    accuracy = Accuracy(task="multiclass", num_classes=len(cfg.classes)).to(device)
     mca_a = MulticlassAccuracy(num_classes=len(cfg.classes), average="macro").to(device)
     mca_i = MulticlassAccuracy(num_classes=len(cfg.classes), average="micro").to(device)
     mca_w = MulticlassAccuracy(num_classes=len(cfg.classes), average="weighted").to(device)
@@ -150,7 +149,6 @@ def train(cfg: DictConfig):
             optimizer.zero_grad()
             outs = model(images)
             loss_ = loss(outs, targets)
-            accuracy_ = accuracy(outs, targets)
             mca_a_ = mca_a(outs, targets)
             mca_i_ = mca_i(outs, targets)
             mca_w_ = mca_w(outs, targets)
@@ -160,7 +158,6 @@ def train(cfg: DictConfig):
 
             # wandb training logging
             wandb.log({"loss": loss_})
-            wandb.log({"accuracy_train": accuracy})
             wandb.log({"mca_a_train": mca_a_})
             wandb.log({"mca_i_train": mca_i_})
             wandb.log({"mca_w_train": mca_w_})
@@ -169,8 +166,8 @@ def train(cfg: DictConfig):
             wandb.log({"recall_train": recall_})
 
             pbar_train.set_postfix_str(
-                'loss={:.2f}, accuracy={:.2f}, mca_a={:.2f}, mca_i={:.2f}, mca_w={:.2f}, f1={:.2f}, precision={:.2f}, '
-                'recall={:.2f}'.format(loss_, accuracy_, mca_a_, mca_i_, mca_w_, f1_, precision_, recall_))
+                'loss={:.2f}, mca_a={:.2f}, mca_i={:.2f}, mca_w={:.2f}, f1={:.2f}, precision={:.2f}, '
+                'recall={:.2f}'.format(loss_, mca_a_, mca_i_, mca_w_, f1_, precision_, recall_))
 
             loss_.backward()
             optimizer.step()
@@ -180,14 +177,13 @@ def train(cfg: DictConfig):
         torch.cuda.empty_cache()
         model.eval()
         pbar_test = tqdm(test_dataloader)
-        accuracy_test, f1_test, precision_test, recall_test, confusion_test, mca_a_test, mca_i_test, mca_w_test = 0, 0, 0, 0, 0, 0, 0, 0
+        f1_test, precision_test, recall_test, confusion_test, mca_a_test, mca_i_test, mca_w_test = 0, 0, 0, 0, 0, 0, 0
         for (images, targets) in pbar_test:
             with torch.no_grad():
                 images = images.to(device)
                 targets = targets.squeeze().to(device)
                 outs = model(images)
 
-                accuracy_test += accuracy(outs, targets)
                 mca_a_test += mca_a(outs, targets)
                 mca_i_test += mca_i(outs, targets)
                 mca_w_test += mca_w(outs, targets)
@@ -196,7 +192,6 @@ def train(cfg: DictConfig):
                 recall_test += recall(outs, targets)
                 confusion_test += confusion_matrix(outs, targets)
 
-        accuracy_test /= len(pbar_test)
         f1_test /= len(pbar_test)
         precision_test /= len(pbar_test)
         recall_test /= len(pbar_test)
@@ -205,13 +200,12 @@ def train(cfg: DictConfig):
         mca_w_test /= len(pbar_test)
 
         # console evaluation logging
-        logger.info('Test: accuracy={:.2f}, mca_a={:.2f}, mca_i={:.2f}, mca_w={:.2f}, f1={:.2f}, precision={:.2f}, '
-                    'recall={:.2f}'.format(accuracy_test, mca_a_test, mca_i_test, mca_w_test, f1_test, precision_test,
+        logger.info('Test: mca_a={:.2f}, mca_i={:.2f}, mca_w={:.2f}, f1={:.2f}, precision={:.2f}, '
+                    'recall={:.2f}'.format(mca_a_test, mca_i_test, mca_w_test, f1_test, precision_test,
                                            recall_test))
         logger.info(f'Confusion matrix: {matrix_to_string(confusion_test)}')
 
         # wandb evaluation logging
-        wandb.log({"accuracy_test": accuracy_test})
         wandb.log({"mca_a_test": mca_a_test})
         wandb.log({"mca_i_test": mca_i_test})
         wandb.log({"mca_w_test": mca_w_test})
