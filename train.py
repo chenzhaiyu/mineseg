@@ -213,23 +213,6 @@ def train(cfg: DictConfig):
         wandb.log({"precision_test": precision_test})
         wandb.log({"recall_test": recall_test})
 
-        # initialize empty lists for ground truth labels and predictions
-        truth_labels = []
-        predicted_labels = []
-
-        # iterate through the confusion matrix to extract labels
-        for _i in range(len(cfg.classes)):
-            for _j in range(len(cfg.classes)):
-                count = confusion_test[_i, _j]
-                # add 'count' ground truth labels and predictions for this cell
-                truth_labels.extend([_i] * count)
-                predicted_labels.extend([_j] * count)
-
-        # wandb confusion matrix logging
-        wandb.log({"eval_confusion_matrix": wandb.plot.confusion_matrix(probs=None, y_true=truth_labels,
-                                                                        preds=predicted_labels,
-                                                                        class_names=cfg.classes)})
-
         # save checkpoint
         state = {
             'epoch': i,
