@@ -1,27 +1,42 @@
+import os
+import random
+
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import os
-import random
+from matplotlib.lines import Line2D
+from matplotlib.colors import ListedColormap
 
 
 def matrix_to_string(matrix):
     return '\n'.join([''.join(['{:10}'.format(item) for item in row]) for row in matrix])
 
 
-def prepare_plot(filename, origImage, origMask, predMask):
+def prepare_plot(filename, image, gt, prediction, classes):
     # initialize our figure
     figure, ax = plt.subplots(nrows=1, ncols=3, figsize=(10, 10))
 
+    # create colormap
+    cmap = plt.get_cmap('tab10')
+    colors = cmap(range(len(classes)))
+    cmap = ListedColormap(colors)
+
     # plot the original image, its mask, and the predicted mask
-    ax[0].imshow(origImage)
-    ax[1].imshow(origMask)
-    ax[2].imshow(predMask)
+    ax[0].imshow(image)
+    ax[1].imshow(gt, cmap=cmap)
+    ax[2].imshow(prediction, cmap=cmap)
+
+    # create a legend with labels for each class using Line2D objects
+    legend_elements = [Line2D([0], [0], marker='o', color='w', markersize=10, markerfacecolor=colors[i],
+                              label=classes[i]) for i in range(len(classes))]
+
+    # add the legend to the plot
+    plt.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc='upper left', title='Classes')
 
     # set the titles of the subplots
     ax[0].set_title("Image")
     ax[1].set_title("GT Mask")
-    ax[2].set_title("Predicted Mask")
+    ax[2].set_title("Predicted")
 
     # set the layout of the figure and display it
     figure.tight_layout()

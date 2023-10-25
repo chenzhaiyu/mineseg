@@ -40,9 +40,9 @@ def train(cfg: DictConfig):
 
     # load data
     train_dataloader = load_data(batch_size=cfg.batch_size, num_workers=cfg.num_workers,
-                                 image_dir=cfg.train_image_dir, mask_dir=cfg.train_mask_dir)
+                                 image_dir=cfg.train_image_dir, mask_dir=cfg.train_mask_dir, remapping=cfg.remapping)
     test_dataloader = load_data(batch_size=cfg.batch_size, num_workers=cfg.num_workers,
-                                image_dir=cfg.test_image_dir, mask_dir=cfg.test_mask_dir)
+                                image_dir=cfg.test_image_dir, mask_dir=cfg.test_mask_dir, remapping=cfg.remapping)
 
     # define model: Unet, UnetPlusPlus, FPN, DeepLabV3, DeepLabV3Plus
     if cfg.model == 'unet':
@@ -93,9 +93,9 @@ def train(cfg: DictConfig):
                                                   cycle_momentum=False)
 
     # define metrics
-    mca_a = MulticlassAccuracy(num_classes=len(cfg.classes), average="macro").to(device)
-    mca_i = MulticlassAccuracy(num_classes=len(cfg.classes), average="micro").to(device)
-    mca_w = MulticlassAccuracy(num_classes=len(cfg.classes), average="weighted").to(device)
+    metric_macro = MulticlassAccuracy(num_classes=len(cfg.classes), average="macro").to(device)
+    metric_micro = MulticlassAccuracy(num_classes=len(cfg.classes), average="micro").to(device)
+    metric_weighted = MulticlassAccuracy(num_classes=len(cfg.classes), average="weighted").to(device)
     f1 = F1Score(task="multiclass", num_classes=len(cfg.classes)).to(device)
     precision = Precision(task="multiclass", average='macro', num_classes=len(cfg.classes)).to(device)
     recall = Recall(task="multiclass", average='macro', num_classes=len(cfg.classes)).to(device)
@@ -148,28 +148,28 @@ def train(cfg: DictConfig):
 
             optimizer.zero_grad()
             outs = model(images)
-            loss_ = loss(outs, targets)
-            mca_a_ = mca_a(outs, targets)
-            mca_i_ = mca_i(outs, targets)
-            mca_w_ = mca_w(outs, targets)
-            f1_ = f1(outs, targets)
-            precision_ = precision(outs, targets)
-            recall_ = recall(outs, targets)
+            loss_train = loss(outs, targets)
+            macro_train = metric_macro(outs, targets)
+            micro_train = metric_micro(outs, targets)
+            weighted_train = metric_weighted(outs, targets)
+            f1_train = f1(outs, targets)
+            precision_train = precision(outs, targets)
+            recall_train = recall(outs, targets)
 
             # wandb training logging
-            wandb.log({"loss": loss_})
-            wandb.log({"mca_a_train": mca_a_})
-            wandb.log({"mca_i_train": mca_i_})
-            wandb.log({"mca_w_train": mca_w_})
-            wandb.log({"f1_train": f1_})
-            wandb.log({"precision_train": precision_})
-            wandb.log({"recall_train": recall_})
+            wandb.log({"loss": loss_train})
+            wandb.log({"macro_train": macro_train})
+            wandb.log({"micro_train": micro_train})
+            wandb.log({"weighted_train": weighted_train})
+            wandb.log({"f1_train": f1_train})
+            wandb.log({"precision_train": precision_train})
+            wandb.log({"recall_train": recall_train})
 
             pbar_train.set_postfix_str(
-                'loss={:.2f}, mca_a={:.2f}, mca_i={:.2f}, mca_w={:.2f}, f1={:.2f}, precision={:.2f}, '
-                'recall={:.2f}'.format(loss_, mca_a_, mca_i_, mca_w_, f1_, precision_, recall_))
+                'loss={:.2f}, metric_macro={:.2f}, metric_micro={:.2f}, metric_weighted={:.2f}, f1={:.2f}, precision={:.2f}, '
+                'recall={:.2f}'.format(loss_train, macro_train, micro_train, weighted_train, f1_train, precision_train, recall_train))
 
-            loss_.backward()
+            loss_train.backward()
             optimizer.step()
             scheduler.step()
 
@@ -177,16 +177,16 @@ def train(cfg: DictConfig):
         torch.cuda.empty_cache()
         model.eval()
         pbar_test = tqdm(test_dataloader)
-        f1_test, precision_test, recall_test, confusion_test, mca_a_test, mca_i_test, mca_w_test = 0, 0, 0, 0, 0, 0, 0
+        f1_test, precision_test, recall_test, confusion_test, macro_test, micro_test, weighted_test = 0, 0, 0, 0, 0, 0, 0
         for (images, targets) in pbar_test:
             with torch.no_grad():
                 images = images.to(device)
                 targets = targets.squeeze().to(device)
                 outs = model(images)
 
-                mca_a_test += mca_a(outs, targets)
-                mca_i_test += mca_i(outs, targets)
-                mca_w_test += mca_w(outs, targets)
+                macro_test += metric_macro(outs, targets)
+                micro_test += metric_micro(outs, targets)
+                weighted_test += metric_weighted(outs, targets)
                 f1_test += f1(outs, targets)
                 precision_test += precision(outs, targets)
                 recall_test += recall(outs, targets)
@@ -195,20 +195,20 @@ def train(cfg: DictConfig):
         f1_test /= len(pbar_test)
         precision_test /= len(pbar_test)
         recall_test /= len(pbar_test)
-        mca_a_test /= len(pbar_test)
-        mca_i_test /= len(pbar_test)
-        mca_w_test /= len(pbar_test)
+        macro_test /= len(pbar_test)
+        micro_test /= len(pbar_test)
+        weighted_test /= len(pbar_test)
 
         # console evaluation logging
-        logger.info('Test: mca_a={:.2f}, mca_i={:.2f}, mca_w={:.2f}, f1={:.2f}, precision={:.2f}, '
-                    'recall={:.2f}'.format(mca_a_test, mca_i_test, mca_w_test, f1_test, precision_test,
-                                           recall_test))
-        logger.info(f'Confusion matrix: {matrix_to_string(confusion_test)}')
+        logger.info(
+            'Test: metric_macro={:.2f}, metric_micro={:.2f}, metric_weighted={:.2f}, f1={:.2f}, precision={:.2f}, '
+            'recall={:.2f}'.format(macro_test, micro_test, weighted_test, f1_test, precision_test, recall_test))
+        logger.info(f'Confusion matrix: \n{matrix_to_string(confusion_test)}')
 
         # wandb evaluation logging
-        wandb.log({"mca_a_test": mca_a_test})
-        wandb.log({"mca_i_test": mca_i_test})
-        wandb.log({"mca_w_test": mca_w_test})
+        wandb.log({"metric_macro_test": macro_test})
+        wandb.log({"metric_micro_test": micro_test})
+        wandb.log({"metric_weighted_test": weighted_test})
         wandb.log({"f1_test": f1_test})
         wandb.log({"precision_test": precision_test})
         wandb.log({"recall_test": recall_test})
@@ -236,7 +236,7 @@ def train(cfg: DictConfig):
             'state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict(),
             'scheduler': scheduler.state_dict(),
-            'acc. macro': mca_a,
+            'accuracy': metric_macro,
         }
         if not os.path.exists(f'{cfg.checkpoint_dir}'):
             os.makedirs(f'{cfg.checkpoint_dir}')
@@ -244,10 +244,10 @@ def train(cfg: DictConfig):
         # Cannot pickle 'WeakMethod' object when saving state_dict for CyclicLr
         # https://github.com/pytorch/pytorch/pull/91400
         torch.save(state, f'{cfg.checkpoint_dir}/checkpoint_{i}.pth')
-        if mca_a_test > best_accuracy:
+        if macro_test > best_accuracy:
             torch.save(state, f'{cfg.checkpoint_path}')
             logger.info(f'Saving checkpoint to {cfg.checkpoint_path}.')
-            best_accuracy = mca_a_test
+            best_accuracy = macro_test
 
 
 if __name__ == '__main__':

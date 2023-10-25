@@ -33,11 +33,10 @@ def test(cfg: DictConfig):
     set_seed(cfg.seed)
 
     # load data
-    test_dataloader = load_data(batch_size=cfg.batch_size, num_workers=cfg.num_workers,
-                                image_dir=cfg.test_image_dir, mask_dir=cfg.test_mask_dir)
+    test_dataloader = load_data(batch_size=cfg.batch_size, num_workers=cfg.num_workers, image_dir=cfg.test_image_dir,
+                                mask_dir=cfg.test_mask_dir, remapping=cfg.remapping)
 
-    # define model
-    # Unet, UnetPlusPlus, FPN, DeepLabV3, DeepLabV3Plus
+    # define model: Unet, UnetPlusPlus, FPN, DeepLabV3, DeepLabV3Plus
     if cfg.model == 'unet':
         _model = smp.Unet
     elif cfg.model == 'unetplusplus':
@@ -80,16 +79,16 @@ def test(cfg: DictConfig):
     # evaluation epoch
     model.eval()
     pbar_test = tqdm(test_dataloader)
-    f1_test, precision_test, recall_test, confusion_test, mca_a_test, mca_i_test, mca_w_test = 0, 0, 0, 0, 0, 0, 0
+    f1_test, precision_test, recall_test, confusion_test, macro_test, micro_test, weighted_test = 0, 0, 0, 0, 0, 0, 0
     for (images, targets) in pbar_test:
         with torch.no_grad():
             images = images.to(device)
             targets = targets.squeeze().to(device)
             outs = model(images)
 
-            mca_a_test += mca_a(outs, targets)
-            mca_i_test += mca_i(outs, targets)
-            mca_w_test += mca_w(outs, targets)
+            macro_test += mca_a(outs, targets)
+            micro_test += mca_i(outs, targets)
+            weighted_test += mca_w(outs, targets)
             f1_test += f1(outs, targets)
             precision_test += precision(outs, targets)
             recall_test += recall(outs, targets)
@@ -98,14 +97,13 @@ def test(cfg: DictConfig):
     f1_test /= len(pbar_test)
     precision_test /= len(pbar_test)
     recall_test /= len(pbar_test)
-    mca_a_test /= len(pbar_test)
-    mca_i_test /= len(pbar_test)
-    mca_w_test /= len(pbar_test)
+    macro_test /= len(pbar_test)
+    micro_test /= len(pbar_test)
+    weighted_test /= len(pbar_test)
 
     logger.info('Test: mca_a={:.2f}, mca_i={:.2f}, mca_w={:.2f}, f1={:.2f}, precision={:.2f}, '
-                'recall={:.2f}'.format(mca_a_test, mca_i_test, mca_w_test, f1_test, precision_test,
-                                       recall_test))
-    logger.info(f'Confusion matrix: {matrix_to_string(confusion_test)}')
+                'recall={:.2f}'.format(macro_test, micro_test, weighted_test, f1_test, precision_test, recall_test))
+    logger.info(f'Confusion matrix: \n{matrix_to_string(confusion_test)}')
 
 
 if __name__ == '__main__':

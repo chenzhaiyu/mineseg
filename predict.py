@@ -27,8 +27,7 @@ def predict(cfg: DictConfig):
     # fix randomness
     set_seed(cfg.seed)
 
-    # define model
-    # Unet, UnetPlusPlus, FPN, DeepLabV3, DeepLabV3Plus
+    # define model: Unet, UnetPlusPlus, FPN, DeepLabV3, DeepLabV3Plus
     if cfg.model == 'unet':
         _model = smp.Unet
     elif cfg.model == 'unetplusplus':
@@ -40,7 +39,7 @@ def predict(cfg: DictConfig):
     elif cfg.model == 'deeplabv3plus':
         _model = smp.DeepLabV3Plus
     else:
-        raise ValueError('unexpected model architecture')    
+        raise ValueError('unexpected model architecture')
     model = _model(
         encoder_name=cfg.encoder,             # choose encoder, e.g. mobilenet_v2 or efficientnet-b7
         encoder_weights=cfg.encoder_weights,  # use `imagenet` pre-trained weights for encoder initialization
@@ -72,13 +71,20 @@ def predict(cfg: DictConfig):
         image = image.astype("float32")
 
         # resize the image and make a copy of it for visualization
-        orig = image.copy().astype(np.uint8)
+        origin = image.copy().astype(np.uint8)
 
         # find the filename and generate the path to ground truth mask
         gt_path = os.path.join(cfg.test_mask_dir, filename)
 
         # load the ground-truth segmentation mask in grayscale mode and resize it
         gt_mask = cv2.imread(gt_path, 0)
+
+        # remap gt mask if needed
+        if cfg.remapping is not None:
+            remapped_mask = gt_mask.clone()
+            for old_value, new_value in cfg.remapping.items():
+                remapped_mask[gt_mask == int(old_value)] = new_value
+            gt_mask = remapped_mask
 
         # make the channel axis to be the leading one, add a batch
         # dimension, create a PyTorch tensor, and flash it to the current device
@@ -98,7 +104,7 @@ def predict(cfg: DictConfig):
         # prepare a plot for visualization
         if not os.path.exists(f'{cfg.result_dir}'):
             os.makedirs(f'{cfg.result_dir}')
-        prepare_plot(os.path.join(cfg.result_dir, filename), orig, gt_mask, pred_mask)
+        prepare_plot(os.path.join(cfg.result_dir, filename), origin, gt_mask, pred_mask, cfg.classes)
 
 
 if __name__ == '__main__':
