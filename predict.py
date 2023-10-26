@@ -81,7 +81,7 @@ def predict(cfg: DictConfig):
 
         # remap gt mask if needed
         if cfg.remapping is not None:
-            remapped_mask = gt_mask.clone()
+            remapped_mask = gt_mask.copy()
             for old_value, new_value in cfg.remapping.items():
                 remapped_mask[gt_mask == int(old_value)] = new_value
             gt_mask = remapped_mask
