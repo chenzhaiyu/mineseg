@@ -206,9 +206,9 @@ def train(cfg: DictConfig):
         logger.info(f'Confusion matrix: \n{matrix_to_string(confusion_test)}')
 
         # wandb evaluation logging
-        wandb.log({"metric_macro_test": macro_test})
-        wandb.log({"metric_micro_test": micro_test})
-        wandb.log({"metric_weighted_test": weighted_test})
+        wandb.log({"macro_test": macro_test})
+        wandb.log({"micro_test": micro_test})
+        wandb.log({"weighted_test": weighted_test})
         wandb.log({"f1_test": f1_test})
         wandb.log({"precision_test": precision_test})
         wandb.log({"recall_test": recall_test})

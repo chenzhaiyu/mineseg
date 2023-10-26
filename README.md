@@ -52,7 +52,7 @@ python test.py model=unet gpu_ids="[0, 1]"
 **Prediction**
 
 ```bash
-python predict.py model=unet
+python predict.py model=unet gpu_ids="[0]" num_examples=1000
 ```
 
 Prediction results will be saved into `./outputs/${model}${run_suffix}`.
