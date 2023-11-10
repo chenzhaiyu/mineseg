@@ -46,3 +46,5 @@ RUN pip install -r requirements.txt
 
 # then run this command
 # docker run -it --gpus all --name mineseg_live --ipc host -v $HOME/src/mineseg/:/src/mineseg/ mineseg:live "bash && conda activate mineseg"
+#
+# docker run -it --rm --name mineseg_live --ipc host -v $HOME/src/mineseg/:/src/mineseg/ -v /workdir/DATA/mine-sector-detection/:/src/mineseg/data/  mineseg:live "bash"
