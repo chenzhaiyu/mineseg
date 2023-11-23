@@ -1,10 +1,11 @@
-TARGDIR="/home/maduschek/ssd/mine-sector-detection/images_trainset/"
-FILES="/home/maduschek/ssd/mine-sector-detection/images/*.jp2"
+TARGDIR="./cut"
+FILES="./dl"
 
-mkdir -p $TARGDIR
+mkdir -p "$TARGDIR"
 
-for f in $FILES
+# Use find to locate all *.jp2 files recursively under the specified path
+find "$FILES" -type f -name "*.jp2" | while IFS= read -r f
 do
   echo "Processing file $f"
-  /usr/bin/gdal_retile.py -resume -v -ps 256 256 -overlap 128 -of PNG -targetDir $TARGDIR $f
+  /usr/bin/gdal_retile.py -v -ps 256 256 -overlap 128 -of PNG -targetDir "$TARGDIR" "$f"
 done
