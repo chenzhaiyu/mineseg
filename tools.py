@@ -15,16 +15,6 @@ from osgeo import gdal, osr
 gdal.UseExceptions()
 
 
-def polygon_touches_bbox(polygon, bounding_box):
-    # Create a Shapely Polygon from the bounding box coordinates
-    bbox_polygon = box(*bounding_box)
-
-    # Check if the polygon touches the bounding box
-    '''if touches:
-        print("\n   Polygon touches bbox")
-
-    return touches'''
-
 
 def progress_bar(x, of_x, what=""):
     percentage = np.round(x/of_x*100, 2)
@@ -295,3 +285,22 @@ def is_point_in_bbox(bbox_small, bbox_big):
     else:
         return False
 
+
+
+def download_via_stac(start_url):
+    import requests
+
+    url = f"https://zipper.dataspace.copernicus.eu/odata/v1/Products(a5ab498a-7b2f-4043-ae2a-f95f457e7b3b)/$value"
+
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    session = requests.Session()
+    session.headers.update(headers)
+    response = session.get(url, headers=headers, stream=True)
+
+    with open("product.zip", "wb") as file:
+        for chunk in response.iter_content(chunk_size=8192):
+            if chunk:
+                file.write(chunk)
+
+    pass

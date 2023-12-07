@@ -1,3 +1,6 @@
+# This script cuts the roi from the sentinel granules into
+# bounding boxes containing one or more mining sites
+
 bounding_boxes=(
 "-69.350289 -20.130951 -69.177941 -19.983245"
 "-68.896417 -21.076386 -68.520822 -20.866085"
