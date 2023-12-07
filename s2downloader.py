@@ -127,7 +127,8 @@ if __name__ == "__main__":
 
                     # check if it is in the IMG_DATA folder and is either B02, B03 or B04 (BGR)
                     if "IMG_DATA" in jp2_file:
-                        if "B02" in jp2_file or "B03" in jp2_file or "B04" in jp2_file:
+                        # if "B02" in jp2_file or "B03" in jp2_file or "B04" in jp2_file:
+                        if "TCI" in jp2_file:
 
                             # create roi image file
                             roi_file = tools.cut_region_of_interest(jp2_file, "cut", roi_bbox)
