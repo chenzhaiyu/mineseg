@@ -1,5 +1,5 @@
-TARGDIR="./cut"
-FILES="./dl"
+TARGDIR=$2
+FILES=$1
 
 mkdir -p "$TARGDIR"
 
