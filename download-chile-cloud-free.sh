@@ -1,3 +1,7 @@
+# this script downloads all sentinel 2 granules of our region of interest (Chile)
+
+mkdir ./dl
+
 # north chile
 python s2downloader.py --bbox -76.154831 -25.269693 -65.827683 -17.186103 --dates "2022-05-01" "2022-05-03" --folder "./dl"
 
