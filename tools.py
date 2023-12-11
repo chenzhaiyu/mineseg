@@ -1,3 +1,5 @@
+import colorsys
+
 import geopandas as gpd
 from rasterio.features import geometry_mask
 import xml.etree.ElementTree as ET
@@ -11,8 +13,68 @@ from pyproj import Proj, transform
 import shapely.geometry
 from PIL import Image
 import os
-from osgeo import gdal, osr
+from osgeo import gdal, osr, gdalconst
 gdal.UseExceptions()
+
+
+def process_image(img_path):
+
+    dataset_orig = gdal.Open(img_path, gdal.GA_ReadOnly)
+
+    # Get information about the dataset
+    width = dataset_orig.RasterXSize
+    height = dataset_orig.RasterYSize
+    bands = dataset_orig.RasterCount
+    band = dataset_orig.GetRasterBand(1)
+
+    # create new file
+    output_file = img_path[:-4] + "_deriv_vert.tif"
+    driver = gdal.GetDriverByName("GTiff")
+    output_dataset = driver.Create(output_file, width, height, bands, gdalconst.GDT_UInt16)
+
+    # Set the georeferencing information
+    output_dataset.SetGeoTransform(dataset_orig.GetGeoTransform())
+    output_dataset.SetProjection(dataset_orig.GetProjection())
+
+    # process the image
+    # img_proc, fn_apx = horizontal_diff(dataset_orig, output_dataset)
+    img_proc, fn_apx = vertical_diff(dataset_orig, output_dataset)
+
+
+    # Close the output GeoTIFF file
+
+    print("Processing and saving completed.")
+
+
+def horizontal_diff(img_orig, output_dataset):
+
+    for band_nr in range(img_orig.RasterCount):
+        band = img_orig.GetRasterBand(band_nr + 1)
+        band_new = output_dataset.GetRasterBand(band_nr + 1)
+        data = band.ReadAsArray().astype(float)
+        data_diff = np.abs(data[0:-1, :] - data[1:, :]).astype(int)
+        data_diff = np.vstack((data_diff, np.expand_dims(data_diff[-1, :], 0)))
+        band_new.WriteArray(data_diff)
+
+    print("finished")
+    return img_orig, "_diff"
+
+
+def vertical_diff(img_orig, output_dataset):
+
+    for band_nr in range(img_orig.RasterCount):
+        band = img_orig.GetRasterBand(band_nr + 1)
+        band_new = output_dataset.GetRasterBand(band_nr + 1)
+        data = band.ReadAsArray().astype(float)
+        data_diff = np.abs(data[:, 0:-1] - data[:, 1:]).astype(int)
+        data_diff = np.hstack((data_diff, np.expand_dims(data_diff[:, -1], 1)))
+        band_new.WriteArray(data_diff)
+
+    print("finished")
+    return img_orig, "_diff"
+
+
+pass
 
 
 

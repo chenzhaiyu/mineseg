@@ -19,6 +19,8 @@ import argparse
 # download with Google cloud
 # use cloud coverage and bbox and specify date or date range
 
+# example call --cloud 100 --bbox -76.154831 -56.269693 -65.827683 -17.186103 --dates "2022-11-05" "2022-11-05" --folder "./dl"
+
 if __name__ == "__main__":
 
     # Definition of input parameters

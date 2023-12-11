@@ -1,3 +1,6 @@
+import requests
+import pandas as pd
+from shapely import geometry
 import json
 import os.path
 
@@ -37,27 +40,15 @@ class CopernicusDL:
         return self.catalog
 
 
-
-
-
-
-
-
-
-
 if __name__ == "__main__":
 
-    dl_path = "C:/DATA/GAZA/img_s1/"
+    dl_path = "C:/DATA/GAZA/img_s2_/"
 
     # open cop downloader
     cop_dl = CopernicusDL("maduschek@gmx.de", "?xn-Cen9VudY98!")
 
     # open catalog
     myCatalog = cop_dl.open_catalog("https://catalogue.dataspace.copernicus.eu/stac")
-
-    import requests
-    import pandas as pd
-    from shapely import geometry
 
     bbox = [34.141933, 31.133144, 34.753735, 31.778842]
     poly = geometry.Polygon(((bbox[0], bbox[1]),
@@ -69,26 +60,31 @@ if __name__ == "__main__":
     json = requests.get(
         "https://catalogue.dataspace.copernicus.eu/odata/v1/Products?$filter="
         "OData.CSC.Intersects(area=geography'SRID=4326;" + poly.wkt + "') and "
-        "ContentDate/Start gt 2023-09-01T00:00:00.000Z and "
-        "ContentDate/Start lt 2023-09-30T00:00:00.000Z and "
-        "Collection/Name eq 'SENTINEL-1'").json()
+        "ContentDate/Start gt 2023-12-11T00:00:00.000Z and "
+        "ContentDate/Start lt 2023-12-31T00:00:00.000Z and "
+        "Collection/Name eq 'SENTINEL-2'").json()
 
     # create pandas data frame with search results
     df = pd.DataFrame.from_dict(json['value'])
 
+    headers = {"Authorization": f"Bearer {cop_dl.access_token}"}
+    session = requests.Session()
+    session.headers.update(headers)
+
     # download each product
     for name, idx in zip(df['Name'].items(), df["Id"].items()):
 
+        print("start downloading: ", name)
         url = f"https://zipper.dataspace.copernicus.eu/odata/v1/Products(" + idx[1] + ")/$value"
 
-        headers = {"Authorization": f"Bearer {cop_dl.access_token}"}
+        if not os.path.isfile(os.path.join(dl_path, name[1] + ".zip")):
 
-        session = requests.Session()
-        session.headers.update(headers)
-        response = session.get(url, headers=headers, stream=True)
+            # request for image
+            response = session.get(url, headers=headers, stream=True)
+            os.makedirs(dl_path, exist_ok=True)
 
-        with open(os.path.join(dl_path, name[1] + ".zip"), "wb") as file:
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    file.write(chunk)
+            with open(os.path.join(dl_path, name[1] + ".zip"), "wb") as file:
+                for idx, chunk in enumerate(response.iter_content(chunk_size=8192)):
+                    if chunk:
+                        file.write(chunk)
 
