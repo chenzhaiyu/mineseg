@@ -42,7 +42,7 @@ class CopernicusDL:
 
 if __name__ == "__main__":
 
-    dl_path = "C:/DATA/GAZA/img_s2_/"
+    dl_path = "C:/DATA/GAZA/img_s1/"
 
     # open cop downloader
     cop_dl = CopernicusDL("maduschek@gmx.de", "?xn-Cen9VudY98!")
@@ -60,9 +60,9 @@ if __name__ == "__main__":
     json = requests.get(
         "https://catalogue.dataspace.copernicus.eu/odata/v1/Products?$filter="
         "OData.CSC.Intersects(area=geography'SRID=4326;" + poly.wkt + "') and "
-        "ContentDate/Start gt 2023-12-11T00:00:00.000Z and "
+        "ContentDate/Start gt 2023-12-10T00:00:00.000Z and "
         "ContentDate/Start lt 2023-12-31T00:00:00.000Z and "
-        "Collection/Name eq 'SENTINEL-2'").json()
+        "Collection/Name eq 'SENTINEL-1'").json()
 
     # create pandas data frame with search results
     df = pd.DataFrame.from_dict(json['value'])
