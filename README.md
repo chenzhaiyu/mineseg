@@ -43,7 +43,7 @@ This will create a sub-folder ./train in which the Sentinel-2 granules for train
 ./crop-to-tiles.sh ./
 ```
 
-To create the chile patches, r
+To create the chile patches, run
 ```bash
 ./crop-to-tiles.sh ./dl /chile
 ```
