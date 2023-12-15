@@ -5,19 +5,13 @@ import os
 import tools
 import argparse
 
-#             west,       south,      east,      north
-# chile    -76.154831, -56.269693, -65.827683, -17.186103
-
-# "bbox": [-76.154831, -25.269693, -65.827683, -17.186103],  # north Chile      03.05.2022
-# "bbox": [-75.000219, -38.937122, -67.763672, -24.44715],   # mid-Chile        14.12.2021
-# "bbox": [-76.289063, -51.890054, -70.919534, -38.243365],  # mid-south Chile  21-02-2022
-# "bbox": [-69.505005, -56.102683, -65.093994, -53.265213],  # south-east       06-08-2022
-# "bbox": [-73.740234, -55.590763, -68.334961, -51.426614],  # south chile      05-11-2022
-
 # S2 downloader
 # search with AWS api
 # download with Google cloud
 # use cloud coverage and bbox and specify date or date range
+# no account necessary
+
+
 
 if __name__ == "__main__":
 
@@ -135,7 +129,7 @@ if __name__ == "__main__":
 
                             # create roi mask file
                             tools.create_binary_raster(input_geojson="./LSM_sectors.geojson",
-                                                       output_raster="./mask/" + os.path.basename(roi_file),
+                                                       output_raster="./roi_masks/" + os.path.basename(roi_file),
                                                        jp2_file=roi_file)
 
 

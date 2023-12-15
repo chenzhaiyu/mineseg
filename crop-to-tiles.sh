@@ -1,29 +1,36 @@
 # Set output paths of the 256x256 segmentation patches
-PATCHDIR=$1/_patches/patches
-MASKSDIR=$1/_patches/masks
 
-mkdir -p "$PATCHDIR"
-mkdir -p "$MASKSDIR"
+ROI_IMAGES=$1
+ROI_MASKS=$2
+
+ROI_IMAGES_PATCHES=$1_patches
+ROI_MASKS_PATCHES=$2_patches
+
+mkdir -p "$ROI_IMAGES_PATCHES"
+mkdir -p "$ROI_MASKS_PATCHES"
 
 
 # Use find to locate all *.jp2 files recursively under the specified path
-find "$1"/images -type f -name "*.jp2" | while IFS= read -r f
+find "$ROI_IMAGES" -type f -name "*_TCI.jp2" | while IFS= read -r f
 do
   echo "Processing file $f"
-  /usr/bin/gdal_retile.py -v -ps 256 256 -overlap 128 -of PNG -targetDir "$PATCHDIR" "$f"
+  /usr/bin/gdal_retile.py -v -ps 256 256 -overlap 128 -of PNG -targetDir "$ROI_IMAGES_PATCHES" "$f"
 done
 
 
 # Use find to locate all *.jp2 files recursively under the specified path
-find "$1"/masks -type f -name "*.jp2" | while IFS= read -r f
+find "$ROI_MASKS" -type f -name "*_TCI.jp2" | while IFS= read -r f
 do
   echo "Processing file $f"
-  /usr/bin/gdal_retile.py -v -ps 256 256 -overlap 128 -of PNG -targetDir "$MASKSDIR" "$f"
+  /usr/bin/gdal_retile.py -v -ps 256 256 -overlap 128 -of PNG -targetDir "$ROI_MASKS_PATCHES" "$f"
 done
+
 
 
 # now get rid of completely black or small tiles and masks
-for image in "$input_folder"/*.png; do
+for image in "$ROI_IMAGES"/*.png; do
+
+    fname=$(basename "$image")
 
     # Use gdalinfo to get pixel value statistics for each band
     stats_r=$(gdalinfo -stats "$image" | grep -A 2 "Band 1" | tail -n 2)
@@ -41,9 +48,11 @@ for image in "$input_folder"/*.png; do
     width=$(echo "$size_info" | awk '{print $3}')
     height=$(echo "$size_info" | awk '{print $5}')
 
-	# Check if all pixel values in all bands are zero
+    # Check if all pixel values in all bands are zero
     if { [ "$mean_val_r" == "0.0" ] && [ "$mean_val_g" == "0.0" ] && [ "$mean_val_b" == "0.0" ] || $width != 256 || $height!=256 ; } then
         echo "Image $image is completely black or smaller then 256x256."
+        rm $ROI_IMAGES/fname
+        rm $ROI_MASKS/fname
     else
         echo "Image $image is not completely black."
     fi

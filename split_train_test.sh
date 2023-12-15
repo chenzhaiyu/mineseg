@@ -1,11 +1,11 @@
 # run this script inside the source code folder
 
-root=data_s2
+root=./
 
-mkdir -p ./$root/patches_img_testset
-mkdir -p ./$root/patches_img_trainset
-mkdir -p ./$root/patches_mask_testset
-mkdir -p ./$root/patches_mask_trainset
+mkdir -p $root/patches_img_testset
+mkdir -p $root/patches_img_trainset
+mkdir -p $root/patches_mask_testset
+mkdir -p $root/patches_mask_trainset
 
 # Define the regions of interest that are defined as test set
 lines=(
@@ -29,31 +29,29 @@ lines=(
 )
 
 echo copying patches to trainset
-cp ./$root/patches/* ./$root/patches_img_trainset/
+rsync -r $root/roi_images_patches/ $root/patches_img_trainset/
+# cp $root/roi_images_patches/* $root/patches_img_trainset/
 
 echo copying masks to trainset
-cp ./$root/masks/* ./$root/patches_mask_trainset/
+rsync -r $root/roi_masks_patches/ $root/patches_mask_trainset/
+# cp $root/roi_masks_patche/* $root/patches_mask_trainset/
 
 echo moving patches to testset
-# copy files containing the specified lines to patches img test folder
+# move files containing the specified lines to patches img test folder
 for line in "${lines[@]}"; do
-  find ./$root/patches_img_trainset -name *$line* -exec mv {} ./$root/patches_img_testset/ \;
+  find $root/patches_img_trainset -name *$line* -exec mv {} $root/patches_img_testset/ \;
 done
 
-echo train-patches: 
-ls -l ./$root/patches_img_trainset | wc -l
-
-echo test-patches: 
-ls -l ./$root/patches_img_testset | wc -l
+echo train-patches:
+ls -l $root/patches_img_trainset | wc -l
 
 echo moving masks to testset
 # copy files containing the specified lines to patches mask test folder
 for line in "${lines[@]}"; do
-  find ./$root/patches_mask_trainset -name *$line* -exec mv {} ./$root/patches_mask_testset/ \;
+  find $root/patches_mask_trainset -name *$line* -exec mv {} $root/patches_mask_testset/ \;
 done
 
+echo test-patches:
+ls -l $root/patches_img_testset | wc -l
+
 echo "images and masks are moved to test set"
-
-
-
-

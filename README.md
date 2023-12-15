@@ -22,30 +22,60 @@ apt-get update && apt-get install libgl1
 ```
 
 ## Data download and preparation
-The data set contains the extents of the mining sites as sentinel-2 images and their corresponding mask files. The sentinel patches for the whole chile experiment need to be downloaded manually. To run the download of all, in our experiments considered Chile Sentinel 2 images run:
+The data set contains the extents of the mining sites as sentinel-2 images and their corresponding mask files. However, if you desire to reproduce the download process or to add images of different dates, you could do it as follows. You will need an environment with gdal installed. We suggest using a conda environment and install gdal with:
 
 ```bash
-./download-chile-cloud-free.sh
+conda install -c conda-forge gdal
 ```
 
-This will create a sub-folder ./chile in which the Sentinel-2 granules of chile are being downloaded. The training data with mining site content will be downloaded with:
+### (re-)Download of data set S2 images
+
+Run the following command
 
 ```bash
 ./download-train-bbox.sh
 ```
 
-This will create a sub-folder ./train in which the Sentinel-2 granules for training are being downloaded. The last step is the cutting into 256x256 pixel sized patches as *.png files for training and inference. To create the training patches, run:
+This will create a sub-folder roi_images and roi_masks in which roi-extracts of Sentinel-2 granules for training are being downloaded. The mask roi's will be created as well, based on the file LSM_sectors.geojson.
+
+The next step is the cutting into 256x256 pixel sized patches as \*.png files for training and inference. To create the training patches, run:
 
 ```bash
-./crop-to-tiles.sh ./train /train_patches
-./crop-to-tiles.sh ./mask /masks_patches
-# choose the folder in which ./train and ./mask lie
-./crop-to-tiles.sh ./
+./crop-to-tiles.sh ./roi_images ./roi_masks
 ```
+
+This will create two new folders ./roi_images_patches and ./roi_masks_patches.
+
+
+### Sentinel-2 images of (almost) whole Chile
+
+The sentinel patches for the whole chile experiment need to be downloaded manually. 
+To run the download of all, in our experiments considered Chile Sentinel 2 images run:
+
+```bash
+./download-chile-cloud-free.sh
+```
+
+This will create a sub-folder ./chile_files in which the Sentinel-2 granules of Chile are being downloaded. The training roi that contains the mining sites will be downloaded with:
+
+
 
 To create the chile patches, run
 ```bash
 ./crop-to-tiles.sh ./dl /chile
+```
+
+
+the final folder structure will look like this:
+
+```
+./
+./data
+./data
+├── patches_img_testset
+├── patches_img_trainset
+├── patches_mask_testset
+└── patches_mask_trainset
 ```
 
 
