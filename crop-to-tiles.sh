@@ -19,7 +19,7 @@ done
 
 
 # Use find to locate all *.jp2 files recursively under the specified path
-find "$ROI_MASKS" -type f -name "*_TCI.jp2" | while IFS= read -r f
+find "$ROI_MASKS" -type f -name "*_TCI*.jp2" | while IFS= read -r f
 do
   echo "Processing file $f"
   /usr/bin/gdal_retile.py -v -ps 256 256 -overlap 128 -of PNG -targetDir "$ROI_MASKS_PATCHES" "$f"
