@@ -1,6 +1,6 @@
 # this file downloads sentinel-2 granules of which our dataset has annotations for
 
-outfolder=./roi_images
+outfolder=./granules
 mkdir -p $outfolder
 
 # north chile

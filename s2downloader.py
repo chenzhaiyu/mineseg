@@ -21,8 +21,8 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--bbox", nargs=4, type=float, required=True,
         help="bbox <west> <south> <east> <north> (4 floats, e.g. -76.154831 -56.269693 -65.827683 -17.186103 ")
     parser.add_argument("-d", "--dates", nargs=2, type=str, required=True, help="<start> <end> date")
-    parser.add_argument("-f", "--folder", type=str, required=False, help="Output folder", default="./dl")
-    parser.add_argument("-e", "--cut_exact", type=bool, required=False, help="Output folder", default=False)
+    parser.add_argument("-f", "--folder", type=str, required=False, help="Output folder", default="./granules")
+    parser.add_argument("-e", "--cut_exact", type=bool, required=False, help="cutting into ROI", default=False)
 
     # parse the data from
     args = parser.parse_args()
@@ -100,7 +100,7 @@ if __name__ == "__main__":
             if args.cut_exact:
 
                 # create the subfolder for roi images and its masks
-                os.makedirs("./cut", exist_ok=True)
+                os.makedirs("./granules", exist_ok=True)
                 os.makedirs("./mask", exist_ok=True)
 
                 # set the bbox as string
@@ -125,7 +125,7 @@ if __name__ == "__main__":
                         if "TCI" in jp2_file:
 
                             # create roi image file
-                            roi_file = tools.cut_region_of_interest(jp2_file, "cut", roi_bbox)
+                            roi_file = tools.cut_region_of_interest(jp2_file, "roi_images", roi_bbox)
 
                             # create roi mask file
                             tools.create_binary_raster(input_geojson="./LSM_sectors.geojson",

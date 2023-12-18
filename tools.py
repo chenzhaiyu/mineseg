@@ -201,7 +201,6 @@ def cut_region_of_interest(input_file, output_path, bbox):
     orig_fname = os.path.basename(input_file)[:-4]
     output_file = os.path.join(output_path, orig_fname + f"{bbox[0]}_{bbox[1]}_{bbox[2]}_{bbox[3]}.jp2")
 
-    # pdb.set_trace()
     if not os.path.isfile(output_file):
         # finally output the files with
         gdal.Warp(output_file, dataset, outputBounds=(bbox_tr[0][0], bbox_tr[0][1], bbox_tr[1][0], bbox_tr[1][1]),

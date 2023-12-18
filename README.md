@@ -2,8 +2,7 @@
 
 This code implements semantic segmentation of mining areas from satellite images.
 
-## Dependencies
-
+## Python Dependencies
 * torch
 * segmentation-models-pytorch
 * torchmetrics
@@ -14,12 +13,14 @@ This code implements semantic segmentation of mining areas from satellite images
 * omegaconf
 * tqdm
 
-##### Dependencies to (re-)download of data set S2 images
+## python Dependencies to (re-)download of data set S2 images
 * rasterio
 * gdal
 * geopandas
 * gsutil (+ google cloud account)
 
+## Packages
+* gdal-bin
 
 
 Install all requirements:
