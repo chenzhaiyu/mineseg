@@ -4,6 +4,7 @@ from pystac_client import Client
 import os
 import tools
 import argparse
+from tools import CopernicusDL
 
 # S2 downloader
 # search with AWS api
@@ -83,6 +84,9 @@ if __name__ == "__main__":
             # build the Google cloud url
             baseurl = ('gs://gcp-public-data-sentinel-2/tiles/' + gc[0:2] + '/' + gc[2] + '/' + gc[3:] + '/' + prod_uri)
 
+            # build the copernicus url
+            url = f"https://zipper.dataspace.copernicus.eu/odata/v1/Products(" + idx[1] + ")/$value"
+
             # create a new granule if it is not yet in the list_of_granules
             new_granule = {
                 "granuleID": gc+sat,
@@ -93,8 +97,12 @@ if __name__ == "__main__":
             }
             list_of_granules.append(new_granule)
 
-            # finally download the granule
-            tools.dl_task(params=new_granule)
+            # finally download the granule with Google
+            tools.dl_task_gcloud(params=new_granule)
+
+            # finally download the granule with Copernicus
+            cop_dl = CopernicusDL("maduschek@gmx.de", "?xn-Cen9VudY98!")
+            tools.dl_task_copernicus(params=new_granule)
 
             # cut precise
             if args.cut_exact:
@@ -119,9 +127,9 @@ if __name__ == "__main__":
                 # for each file and RGB Band cut the region of interest
                 for idx, jp2_file in enumerate(jp2_files):
 
-                    # check if it is in the IMG_DATA folder and is either B02, B03 or B04 (BGR)
+                    # check if it is in the IMG_DATA folder...
                     if "IMG_DATA" in jp2_file:
-                        # if "B02" in jp2_file or "B03" in jp2_file or "B04" in jp2_file:
+                        # ...and is TCI
                         if "TCI" in jp2_file:
 
                             # create roi image file
