@@ -85,7 +85,7 @@ if __name__ == "__main__":
             baseurl = ('gs://gcp-public-data-sentinel-2/tiles/' + gc[0:2] + '/' + gc[2] + '/' + gc[3:] + '/' + prod_uri)
 
             # build the copernicus url
-            url = f"https://zipper.dataspace.copernicus.eu/odata/v1/Products(" + idx[1] + ")/$value"
+            # url = f"https://zipper.dataspace.copernicus.eu/odata/v1/Products(" + idx[1] + ")/$value"
 
             # create a new granule if it is not yet in the list_of_granules
             new_granule = {
@@ -101,15 +101,15 @@ if __name__ == "__main__":
             tools.dl_task_gcloud(params=new_granule)
 
             # finally download the granule with Copernicus
-            cop_dl = CopernicusDL("maduschek@gmx.de", "?xn-Cen9VudY98!")
-            tools.dl_task_copernicus(params=new_granule)
+            # cop_dl = CopernicusDL("maduschek@gmx.de", "?xn-Cen9VudY98!")
+            # tools.dl_task_copernicus(params=new_granule)
 
             # cut precise
             if args.cut_exact:
 
-                # create the subfolder for roi images and its masks
-                os.makedirs("./granules", exist_ok=True)
-                os.makedirs("./mask", exist_ok=True)
+                # create the subfolder for the granules and roi_images
+                os.makedirs(out_folder, exist_ok=True)
+                os.makedirs("roi_images", exist_ok=True)
 
                 # set the bbox as string
                 bbox_str = (
@@ -135,7 +135,7 @@ if __name__ == "__main__":
                             # create roi image file
                             roi_file = tools.cut_region_of_interest(jp2_file, "roi_images", roi_bbox)
 
-                            # create roi mask file
+                            # create roi mask file from polygons
                             tools.create_binary_raster(input_geojson="./LSM_sectors.geojson",
                                                        output_raster="./roi_masks/" + os.path.basename(roi_file),
                                                        jp2_file=roi_file)

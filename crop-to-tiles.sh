@@ -11,7 +11,7 @@ mkdir -p "$ROI_MASKS_PATCHES"
 
 
 # Use find to locate all *.jp2 files recursively under the specified path
-find "$ROI_IMAGES" -type f -name "*_TCI.jp2" | while IFS= read -r f
+find "$ROI_IMAGES" -type f -name "*_TCI*.jp2" | while IFS= read -r f
 do
   echo "Processing file $f"
   /usr/bin/gdal_retile.py -v -ps 256 256 -overlap 128 -of PNG -targetDir "$ROI_IMAGES_PATCHES" "$f"
@@ -26,9 +26,8 @@ do
 done
 
 
-
 # now get rid of completely black or small tiles and masks
-for image in "$ROI_IMAGES"/*.png; do
+for image in "$ROI_IMAGES_PATCHES"/*.png; do
 
     fname=$(basename "$image")
 
@@ -51,8 +50,8 @@ for image in "$ROI_IMAGES"/*.png; do
     # Check if all pixel values in all bands are zero
     if { [ "$mean_val_r" == "0.0" ] && [ "$mean_val_g" == "0.0" ] && [ "$mean_val_b" == "0.0" ] || $width != 256 || $height!=256 ; } then
         echo "Image $image is completely black or smaller then 256x256."
-        rm $ROI_IMAGES/fname
-        rm $ROI_MASKS/fname
+        rm $ROI_IMAGES_PATCHES/fname
+        rm $ROI_MASKS_PATCHES/fname
     else
         echo "Image $image is not completely black."
     fi
