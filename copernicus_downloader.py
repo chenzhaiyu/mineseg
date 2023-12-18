@@ -6,38 +6,7 @@ import os.path
 
 import requests
 from pystac_client import Client
-
-
-class CopernicusDL:
-
-    def __init__(self, username: "", password: ""):
-        self.username = username
-        self.password = password
-        self.access_token = self.get_access_token(username, password)
-        self.catalog = []
-
-
-    def get_access_token(self, username: str, password: str) -> str:
-        data = {
-            "client_id": "cdse-public",
-            "username": username,
-            "password": password,
-            "grant_type": "password",
-        }
-        try:
-            r = requests.post("https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token",
-                              data=data,
-                              )
-            r.raise_for_status()
-        except Exception as e:
-            raise Exception(
-                f"Access token creation failed. Reponse from the server was: {r.json()}"
-            )
-        return r.json()["access_token"]
-
-    def open_catalog(self, url):
-        self.catalog = Client.open(url)
-        return self.catalog
+from tools import CopernicusDL
 
 
 if __name__ == "__main__":

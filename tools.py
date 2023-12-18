@@ -14,7 +14,43 @@ import shapely.geometry
 from PIL import Image
 import os
 from osgeo import gdal, osr, gdalconst
+import requests
+from pystac_client import Client
 gdal.UseExceptions()
+
+
+
+class CopernicusDL:
+
+    def __init__(self, username: "", password: ""):
+        self.username = username
+        self.password = password
+        self.access_token = self.get_access_token(username, password)
+        self.catalog = []
+
+
+    def get_access_token(self, username: str, password: str) -> str:
+        data = {
+            "client_id": "cdse-public",
+            "username": username,
+            "password": password,
+            "grant_type": "password",
+        }
+        try:
+            r = requests.post("https://identity.dataspace.copernicus.eu/auth/realms/CDSE/protocol/openid-connect/token",
+                              data=data,
+                              )
+            r.raise_for_status()
+        except Exception as e:
+            raise Exception(
+                f"Access token creation failed. Reponse from the server was: {r.json()}"
+            )
+        return r.json()["access_token"]
+
+    def open_catalog(self, url):
+        self.catalog = Client.open(url)
+        return self.catalog
+
 
 
 def process_image(img_path):
@@ -310,7 +346,27 @@ def check_cloud_mask(baseurl):
 
 
 
-def dl_task(params):
+def dl_task_copernicus(params):
+    headers = {"Authorization": f"Bearer {params['headers'].access_token}"}
+    session = requests.Session()
+    session.headers.update(headers)
+
+    filename = params["filename"]
+    out_path = params["out_path"]
+    baseurl = params["baseurl"]
+
+    if not os.path.isdir(os.path.join(out_path, filename)):
+        print(filename + " does not exist.")
+        subprocess.call(f"gsutil -m cp -r {baseurl} {out_path}", shell=True)
+        # print("Compressing folder " + filename)
+        # shutil.make_archive(os.path.join(outf, filename), 'zip', outf, filename)
+        # shutil.rmtree(os.path.join(outf, filename))
+    else:
+        print(filename + " already exists.")
+
+
+
+def dl_task_gcloud(params):
     filename = params["filename"]
     out_path = params["out_path"]
     baseurl = params["baseurl"]
