@@ -45,15 +45,15 @@ Run the following command
 ./download-train-bbox.sh
 ```
 
-This will create a sub-folder roi_images and roi_masks in which roi-extracts of Sentinel-2 granules for training are being downloaded. The mask roi's will be created as well, based on the file LSM_sectors.geojson.
+This will create a sub-folder ```granules``` in which the whole Sentinel-2 granules are being downloaded, the folder, ```roi_images``` and ```roi_masks```  in which the roi-extracts of the Sentinel-2 granules for training are being downloaded. The mask roi's will be created as well, based on the file ```LSM_sectors.geojson```.
 
-The next step is the cutting into 256x256 pixel sized patches as \*.png files for training and inference. To create the training patches, run:
+The next step is the cutting into 256x256 pixel sized patches as ```*.png``` files for training and inference. To create the training patches, run:
 
 ```bash
 ./crop-to-tiles.sh ./roi_images ./roi_masks
 ```
 
-This will create two new folders ./roi_images_patches and ./roi_masks_patches.
+This will create two new folders ```./roi_images_patches``` and ```./roi_masks_patches```.
 
 
 ### Sentinel-2 images of (almost) whole Chile
@@ -69,9 +69,9 @@ This will create a sub-folder ./chile_files in which the Sentinel-2 granules of 
 
 
 
-To create the chile patches, run
+To create the chile patches, rune
 ```bash
-./crop-to-tiles.sh ./dl /chile
+./crop-to-tiles.sh ./chile_files ./chile_patches
 ```
 
 
@@ -79,12 +79,15 @@ the final folder structure will look like this:
 
 ```
 ./
+./...
 ./data
-./data
-├── patches_img_testset
-├── patches_img_trainset
-├── patches_mask_testset
-└── patches_mask_trainset
+├── chile_files/
+├── granules/
+├── mask/
+├── roi_images/
+├── roi_images_patches/
+├── roi_masks/
+├── roi_masks_patches/
 ```
 
 
