@@ -6,13 +6,13 @@ defaults:
 
 # paths
 run_suffix: ''
-data_root: './data_s2'
+data_root: './data'
 checkpoint_dir: './checkpoints/${model}${run_suffix}'
 checkpoint_path: '${checkpoint_dir}/checkpoint_best.pth'
-train_image_dir: '${data_root}/patches_img_trainset'
-train_mask_dir: '${data_root}/patches_mask_trainset'
-test_image_dir: '${data_root}/patches_img_testset'
-test_mask_dir: '${data_root}/patches_mask_testset'
+train_image_dir: '${data_root}/roi_images_patches'
+train_mask_dir: '${data_root}/roi_masks_patches'
+test_image_dir: '${data_root}/roi_images_patches'
+test_mask_dir: '${data_root}/roi_masks_patches'
 result_dir: './outputs/${model}${run_suffix}'
 
 # architecture
@@ -33,7 +33,7 @@ freeze_encoder: false
 gpu_ids: [0, 1]
 num_epochs: 50
 weight_decay: 0.00001
-batch_size: 256
+batch_size: 32
 num_workers: 11
 num_examples: 1000
 seed: 1117

@@ -4,7 +4,7 @@ Supervised training for multi-class mining site segmentation.
 
 import os
 import logging
-
+import pdb
 import wandb
 import hydra
 from omegaconf import DictConfig
@@ -141,6 +141,8 @@ def train(cfg: DictConfig):
         # wandb epoch logging
         wandb.log({"epoch": i})
         wandb.log({"learning_rate": optimizer.param_groups[0]['lr']})
+        
+        # pdb.set_trace()
 
         for (images, targets) in pbar_train:
             images = images.to(device)

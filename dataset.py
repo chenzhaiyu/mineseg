@@ -25,6 +25,10 @@ class MiningSectorDataset(Dataset):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         mask = cv2.imread(mask_path, 0)
 
+        # resize all images (just for debugging)
+        # image = cv2.resize(image, (256,256))
+        # mask = cv2.resize(mask, (256,256))
+
         # convert data
         image = torch.from_numpy(image.transpose(2, 0, 1).astype('float32'))
         mask = torch.from_numpy(mask.astype('int64')).unsqueeze(0)

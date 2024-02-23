@@ -1,6 +1,6 @@
 # this script downloads all sentinel 2 granules of almost whole Chile
 
-$outfolder=chile_files
+outfolder=chile_files
 mkdir ./$outfolder
 
 # north chile

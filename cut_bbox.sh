@@ -50,7 +50,7 @@ bounding_boxes=(
 )
 
 # Path to the root directory containing JP2 files and subfolders
-root_dir="./dl_ds"
+root_dir="./roi_images"
 
 # Find all JP2 files recursively
 jp2_files=$(find "$root_dir" -type f -name "*TCI.jp2")

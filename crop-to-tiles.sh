@@ -1,7 +1,6 @@
-# Set output paths of the 256x256 segmentation patches
+#!/bin/bash
 
-ROI_IMAGES=$1
-ROI_MASKS=$2
+# Set output paths of the 256x256 segmentation patches
 
 ROI_IMAGES_PATCHES=$1_patches
 ROI_MASKS_PATCHES=$2_patches
@@ -10,21 +9,29 @@ mkdir -p "$ROI_IMAGES_PATCHES"
 mkdir -p "$ROI_MASKS_PATCHES"
 
 
-# Use find to locate all *.jp2 files recursively under the specified path
-find "$ROI_IMAGES" -type f -name "*_TCI*.jp2" | while IFS= read -r f
+# Use find to locate all image files recursively under the specified path
+find "$1" -type f -name "*_TCI*.jp2" | while IFS= read -r f
 do
   echo "Processing file $f"
   /usr/bin/gdal_retile.py -v -ps 256 256 -overlap 128 -of PNG -targetDir "$ROI_IMAGES_PATCHES" "$f"
 done
 
-
-# Use find to locate all *.jp2 files recursively under the specified path
-find "$ROI_MASKS" -type f -name "*_TCI*.jp2" | while IFS= read -r f
+# Use find to locate all mask files recursively under the specified path
+find "$2" -type f -name "*_TCI*.jp2" | while IFS= read -r f
 do
   echo "Processing file $f"
   /usr/bin/gdal_retile.py -v -ps 256 256 -overlap 128 -of PNG -targetDir "$ROI_MASKS_PATCHES" "$f"
 done
 
+# move the xml files into subfolder
+mkdir $ROI_IMAGES_PATCHES/aux_xml/
+mv $ROI_IMAGES_PATCHES/*.aux.xml $ROI_IMAGES_PATCHES/aux_xml/
+
+mkdir $ROI_MASKS_PATCHES/aux_xml/
+mv $ROI_MASKS_PATCHES/*.aux.xml $ROI_MASKS_PATCHES/aux_xml/
+
+
+exit 0 
 
 # now get rid of completely black or small tiles and masks
 for image in "$ROI_IMAGES_PATCHES"/*.png; do
@@ -41,19 +48,24 @@ for image in "$ROI_IMAGES_PATCHES"/*.png; do
     mean_val_g=$(echo "$stats_g" | grep -oP "Mean=.{3}" | cut -d= -f2)
     mean_val_b=$(echo "$stats_b" | grep -oP "Mean=.{3}" | cut -d= -f2)
 
-    size_info=$(gdalinfo "$image" | grep "Size is")
+    size_info=$(gdalinfo "$image" | grep "Size is")	
 
-    # Extract width and height from the size information
-    width=$(echo "$size_info" | awk '{print $3}')
-    height=$(echo "$size_info" | awk '{print $5}')
+    # Extract width value
+    width=$(echo "$size_info" | awk '{print $3}' | awk -F ',' '{print $1}')
 
-    # Check if all pixel values in all bands are zero
-    if { [ "$mean_val_r" == "0.0" ] && [ "$mean_val_g" == "0.0" ] && [ "$mean_val_b" == "0.0" ] || $width != 256 || $height!=256 ; } then
-        echo "Image $image is completely black or smaller then 256x256."
-        rm $ROI_IMAGES_PATCHES/fname
-        rm $ROI_MASKS_PATCHES/fname
+	# Extract height value
+	height=$(echo "$size_info" | awk '{print $4}')
+
+	echo "$fname": 
+	echo "     " width: "$width", height: "$height", green: "$mean_val_g", red: "$mean_val_r", blue: "$mean_val_b"
+
+    if [[ ( "$mean_val_r" == "0.0" && "$mean_val_g" == "0.0" && "$mean_val_b" == "0.0" ) || ( $width -ne 256 || $height -ne 256 ) ]]; then
+        echo "      Image is completely black or smaller than 256x256 -> DELETE"
+        # rm -f "$ROI_IMAGES_PATCHES/$fname"
+        # rm -f "$ROI_MASKS_PATCHES/$fname"
     else
-        echo "Image $image is not completely black."
+        echo ""
     fi
+	echo ""
 
 done
