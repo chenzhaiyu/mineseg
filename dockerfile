@@ -9,6 +9,7 @@ COPY ./requirements.txt /src/mineseg
 
 RUN apt update
 RUN apt install wget -y
+RUN apt install gdal-bin
 
 # install miniconda in silent mode
 ENV CONDA_DIR /opt/conda
