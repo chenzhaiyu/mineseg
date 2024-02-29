@@ -70,6 +70,20 @@ def predict(cfg: DictConfig):
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image = image.astype("float32")
 
+        # do padding
+        height, width = image.shape[:2]
+        desired_size = 256
+
+        # Compute padding
+        delta_width = desired_size - width
+        delta_height = desired_size - height
+        top, bottom = delta_height//2, delta_height-(delta_height//2)
+        left, right = delta_width//2, delta_width-(delta_width//2)
+
+        image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_CONSTANT, value=[0,0,0])
+        # mask = cv2.copyMakeBorder(mask, top, bottom, left, right, cv2.BORDER_CONSTANT, value=[0,0,0])
+
+
         # resize the image and make a copy of it for visualization
         origin = image.copy().astype(np.uint8)
 
