@@ -142,8 +142,7 @@ def train(cfg: DictConfig):
         wandb.log({"epoch": i})
         wandb.log({"learning_rate": optimizer.param_groups[0]['lr']})
         
-        # pdb.set_trace()
-
+        
         for (images, targets) in pbar_train:
             images = images.to(device)
             targets = targets.squeeze().to(device)

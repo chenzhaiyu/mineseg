@@ -25,13 +25,12 @@ done
 
 # move the xml files into subfolder
 mkdir $ROI_IMAGES_PATCHES/aux_xml/
-mv $ROI_IMAGES_PATCHES/*.aux.xml $ROI_IMAGES_PATCHES/aux_xml/
+rm $ROI_IMAGES_PATCHES/*.aux.xml
 
 mkdir $ROI_MASKS_PATCHES/aux_xml/
-mv $ROI_MASKS_PATCHES/*.aux.xml $ROI_MASKS_PATCHES/aux_xml/
+rm $ROI_MASKS_PATCHES/*.aux.xml 
 
-
-exit 0 
+exit 0
 
 # now get rid of completely black or small tiles and masks
 for image in "$ROI_IMAGES_PATCHES"/*.png; do
@@ -59,7 +58,7 @@ for image in "$ROI_IMAGES_PATCHES"/*.png; do
 	echo "$fname": 
 	echo "     " width: "$width", height: "$height", green: "$mean_val_g", red: "$mean_val_r", blue: "$mean_val_b"
 
-    if [[ ( "$mean_val_r" == "0.0" && "$mean_val_g" == "0.0" && "$mean_val_b" == "0.0" ) || ( $width -ne 256 || $height -ne 256 ) ]]; then
+    if [[ ( "$mean_val_r" == "0.0" && "$mean_val_g" == "0.0" && "$mean_val_b" == "0.0" ) ]]; then
         echo "      Image is completely black or smaller than 256x256 -> DELETE"
         # rm -f "$ROI_IMAGES_PATCHES/$fname"
         # rm -f "$ROI_MASKS_PATCHES/$fname"

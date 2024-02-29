@@ -1,5 +1,4 @@
 import colorsys
-
 import geopandas as gpd
 from rasterio.features import geometry_mask
 import xml.etree.ElementTree as ET
@@ -120,6 +119,7 @@ def progress_bar(x, of_x, what=""):
 
 
 def create_binary_raster(input_geojson, output_raster, jp2_file):
+
     # Read GeoJSON file
     gdf = gpd.read_file(input_geojson)
 
@@ -161,6 +161,8 @@ def create_binary_raster(input_geojson, output_raster, jp2_file):
         else:
             # print("POLYGON does NOT TOUCH: \n   ", geom, "\n   ", jp2_file_bbox)
             pass
+
+    os.makedirs(os.path.dirname(output_raster), exist_ok=True)
 
     # Create a new raster file
     with rasterio.open(
