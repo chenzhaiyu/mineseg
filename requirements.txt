@@ -11,3 +11,5 @@ hydra-colorlog
 wandb
 pystac_client
 geopandas
+rasterio
+imagecodecs
