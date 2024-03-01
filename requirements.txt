@@ -9,3 +9,5 @@ tqdm==4.65.0
 hydra-core
 hydra-colorlog
 wandb
+pystac_client
+geopandas
