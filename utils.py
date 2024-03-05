@@ -13,6 +13,10 @@ def matrix_to_string(matrix):
 
 
 def prepare_plot(filename, image, gt, prediction, classes):
+    
+    if gt == None:
+        gt = prediction
+    
     # initialize our figure
     figure, ax = plt.subplots(nrows=1, ncols=3, figsize=(10, 10))
 

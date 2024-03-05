@@ -9,11 +9,13 @@ run_suffix: ''
 data_root: '.'
 checkpoint_dir: './checkpoints/${model}${run_suffix}'
 checkpoint_path: '${checkpoint_dir}/checkpoint_best.pth'
-train_image_dir: '${data_root}/roi_images_patches'
-train_mask_dir: '${data_root}/roi_masks_patches'
-test_image_dir: '${data_root}/roi_images_patches'
-test_mask_dir: '${data_root}/roi_masks_patches'
+train_image_dir: '${data_root}/patches_img_trainset'
+train_mask_dir: '${data_root}/patches_mask_trainset'
+test_image_dir: '${data_root}/patches_img_testset'
+test_mask_dir: '${data_root}/patches_mask_testset'
+
 result_dir: './outputs/${model}${run_suffix}'
+# result_dir: './outputs/chile_pred/'
 
 # architecture
 in_channel: 3
@@ -21,7 +23,7 @@ model: 'unet'
 encoder: 'resnet50'               # https://smp.readthedocs.io/en/latest/encoders.html
 encoder_weights: 'imagenet'
 # classes: ['-', 'lh', 'mf', 'op', 'pp', 'sy', 'tsf', 'wr']
-classes: ['bk', 'bg', 'ms']
+classes: ['bg', 'ms']
 # remapping: {'0':0, '3':1, '4':2, '5':3, '6':4, '7':5, '8':6, '9':7}
 remapping: null
 activation: null                  # null for logits (softmax to be computed in loss)
@@ -32,11 +34,11 @@ warm: false                       # warm start from checkpoint
 warm_optimizer: true              # load optimizer from checkpoint if available
 warm_scheduler: true              # load scheduler from checkpoint if available
 freeze_encoder: false
-gpu_ids: [0, 1]
+gpu_ids: [0]
 num_epochs: 50
 weight_decay: 0.00001
 batch_size: 32
-num_workers: 11
+num_workers: 32
 num_examples: 1000
 seed: 1117
 loss: ce                          # ce, dice, focal
