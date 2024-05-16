@@ -56,7 +56,11 @@ def get_polygon_of_country(CountryName):
     return geom
 
 
-def get_tiles_in_polygon(polygon, zoom):
+def get_tiles_in_polygon(polygon, zoom, tilematrixset):
+
+    zoom = int(zoom)
+    if "256" in tilematrixset:
+        zoom += 1
 
     # get the bounding box coordinates in DD (decimal degree)
     min_lon, min_lat, max_lon, max_lat = polygon.bounds
@@ -84,8 +88,6 @@ def get_tiles_in_polygon(polygon, zoom):
 
 country_name = "Chile"
 countryPolygon = get_polygon_of_country(country_name)
-zoomLevel = 14 # 10m/pixel
-tiles = get_tiles_in_polygon(countryPolygon, zoomLevel)
 
 param = {}
 param["maxcc"] = "15"
@@ -94,14 +96,14 @@ param["showLogo"] = "false"
 param["transparent"] = "false"
 param["layers"] = "1_TRUE_COLOR"
 param["tilematrix"] = "14"
-param["tilematrixset"] = "PopularWebMercator512"
+param["tilematrixset"] = "PopularWebMercator256"
 param["format"] = "image/png"
 param["time_start"] = "2021-01-01"
 param["time_end"] = "2022-12-31"
 
-print(param["maxcc"])
 
-pdb.set_trace()
+tiles = get_tiles_in_polygon(countryPolygon, param["tilematrix"], param["tilematrixset"])
+
 
 for tile in tiles:
 
@@ -118,16 +120,20 @@ for tile in tiles:
            f"TILEROW={tile[1]}&"
            f"TILECOL={tile[0]}&"
            f"TIME={param['time_start']}/{param['time_end']}&"
+           f"showLogo={param['showLogo']}&"
            f"transparent={param['transparent']}")
 
-    time.sleep(1)
-    print(url)
+    time.sleep(0.1)
+
+
 
     response = requests.get(url)
     if response.status_code == 200:
         with Image.open(BytesIO(response.content)) as img:
+            path = "./data/chile_patches/"
             f_name = country_name + "_" + str(tile[0]) + "_" + str(tile[1])
-            img.save(f_name + ".png", "png")
-            print("saved ", f_name)
+            img.save(path + f_name + ".png", "png")
+            print(str(i), " of ", len(tiles), " tiles. (", path + f_name, ")")
     else:
         print(f"Error fetching tile: HTTP {response.status_code} - {response.text}")
+
