@@ -1,4 +1,4 @@
-outpath=$1
+outpath=./data/chile_files/
 echo Images will be downloaded into $outpath
 echo 
 echo 

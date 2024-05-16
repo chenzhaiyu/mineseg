@@ -74,8 +74,6 @@ def predict(cfg: DictConfig):
         height, width = image.shape[:2]
         desired_size = 256
 
-        pdb.set_trace()
-
         # Compute padding
         delta_width = desired_size - width
         delta_height = desired_size - height
@@ -107,18 +105,17 @@ def predict(cfg: DictConfig):
         # in case we have no GT data
         if cfg.test_mask_dir == '':
             
+            # write the prediction mask as image
             cv2.imwrite(os.path.join(cfg.result_dir, filename), pred_mask)
             
             if not os.path.exists(f'{cfg.result_dir}'):
                 os.makedirs(f'{cfg.result_dir}')
             
             # show plot without GT
-            # prepare_plot(os.path.join(cfg.result_dir, filename), origin, None, pred_mask, cfg.classes)
+            prepare_plot(os.path.join(cfg.result_dir, filename), origin, None, pred_mask, cfg.classes)
 
         else:
             
-            pdb.set_trace()
-
             # find the filename and generate the path to ground truth mask
             gt_path = os.path.join(cfg.test_mask_dir, filename)
 
@@ -131,21 +128,6 @@ def predict(cfg: DictConfig):
                 for old_value, new_value in cfg.remapping.items():
                     remapped_mask[gt_mask == int(old_value)] = new_value
                 gt_mask = remapped_mask
-
-            # make the channel axis to be the leading one, add a batch
-            # dimension, create a PyTorch tensor, and flash it to the current device
-            image = np.transpose(image, (2, 0, 1))
-            image = np.expand_dims(image, 0)
-            image = torch.from_numpy(image).to(device)
-
-            # make the prediction and convert the result to a NumPy array
-            with torch.no_grad():
-                pred_mask = model(image).squeeze()
-                pred_mask = torch.argmax(pred_mask, dim=0)
-                pred_mask = pred_mask.cpu().numpy()
-
-            # convert prediction to integers
-            pred_mask = pred_mask.astype(np.uint8)
 
             # prepare a plot for visualization
             if not os.path.exists(f'{cfg.result_dir}'):

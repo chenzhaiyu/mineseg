@@ -1,6 +1,6 @@
 import os
 import random
-
+import pdb
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -14,8 +14,9 @@ def matrix_to_string(matrix):
 
 def prepare_plot(filename, image, gt, prediction, classes):
     
-    if gt == None:
-        gt = prediction
+    # check if ground truth is empty and replace it with prediction
+    if gt is None:
+        gt = np.zeros((256,256))
     
     # initialize our figure
     figure, ax = plt.subplots(nrows=1, ncols=3, figsize=(10, 10))
