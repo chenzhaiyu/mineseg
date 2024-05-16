@@ -11,6 +11,7 @@ from io import BytesIO
 import geopandas as gpd
 from shapely.geometry import Polygon, box
 from shapely.geometry.polygon import Polygon as ShapelyPolygon
+from urllib.request import urlretrieve
 import pdb
 
 
@@ -42,8 +43,10 @@ def tile_to_polygon(x_tile, y_tile, zoom):
 def get_polygon_of_country(CountryName):
 
     # load natural earth low res shapefile
-    # download the file:
-    # https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/110m/cultural/ne_110m_admin_0_countries.zip
+    # download the file
+    url = ("https://naciscdn.org/naturalearth/110m/cultural/ne_110m_admin_0_countries.zip")
+    urlretrieve(url, "ne_110m_admin_0_countries.zip")
+
     ne = gpd.read_file("ne_110m_admin_0_countries.zip")
 
     # get AOI geometry 
@@ -84,6 +87,7 @@ countryPolygon = get_polygon_of_country(country_name)
 zoomLevel = 14 # 10m/pixel
 tiles = get_tiles_in_polygon(countryPolygon, zoomLevel)
 
+param = {}
 param["maxcc"] = "15"
 param["priority"] = "leastCC"
 param["showLogo"] = "false"
@@ -95,6 +99,8 @@ param["format"] = "image/png"
 param["time_start"] = "2021-01-01"
 param["time_end"] = "2022-12-31"
 
+print(param["maxcc"])
+
 pdb.set_trace()
 
 for tile in tiles:
@@ -102,17 +108,17 @@ for tile in tiles:
     url = (f"https://sh.dataspace.copernicus.eu/ogc/wmts/784ca3c2-8e61-4f9f-8c2e-9a33fb2fad58?SERVICE=WMTS&REQUEST="
            f"GetTile&"
            f"VERSION=1.0.0&"
-           f"LAYER={param["layers"]}&"
+           f"LAYER={param['layers']}&"
            f"STYLE=&"
-           f"priority={param["priority"]}&"
-           f"maxcc={param["maxcc"]}&"
-           f"FORMAT={param["format"]}&"
-           f"TILEMATRIXSET={param["tilematrixset"]}&"
-           f"TILEMATRIX={param["tilematrix"]}&"
+           f"priority={param['priority']}&"
+           f"maxcc={param['maxcc']}&"
+           f"FORMAT={param['format']}&"
+           f"TILEMATRIXSET={param['tilematrixset']}&"
+           f"TILEMATRIX={param['tilematrix']}&"
            f"TILEROW={tile[1]}&"
            f"TILECOL={tile[0]}&"
-           f"TIME={param["time_start"]}/{param["time_end"]}&"
-           f"transparent={param["transparent"]}")
+           f"TIME={param['time_start']}/{param['time_end']}&"
+           f"transparent={param['transparent']}")
 
     time.sleep(1)
     print(url)
