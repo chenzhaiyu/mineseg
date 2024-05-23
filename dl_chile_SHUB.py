@@ -4,6 +4,7 @@
 # config.sh_client_secret = 'NMxn75qH0zD80uteBet7zX0wzirn5FqR'
 
 import math
+import os.path
 import time
 import requests
 from PIL import Image
@@ -24,7 +25,7 @@ def deg_to_tile(lat, lon, zoom):
 
 
 def tile_to_deg(x_tile, y_tile, zoom):
-    pdb.set_trace
+
     n = 2.0 ** zoom
     lon = x_tile*2 / n * 360.0 - 180.0
     lat_rad = math.atan(math.sinh(math.pi * (1 - 2 * y_tile*2 / n)))
@@ -101,11 +102,10 @@ param["format"] = "image/png"
 param["time_start"] = "2021-01-01"
 param["time_end"] = "2022-12-31"
 
-
 tiles = get_tiles_in_polygon(countryPolygon, param["tilematrix"], param["tilematrixset"])
 
-
-for tile in tiles:
+error_files = []
+for i, tile in enumerate(tiles):
 
     url = (f"https://sh.dataspace.copernicus.eu/ogc/wmts/784ca3c2-8e61-4f9f-8c2e-9a33fb2fad58?SERVICE=WMTS&REQUEST="
            f"GetTile&"
@@ -123,17 +123,21 @@ for tile in tiles:
            f"showLogo={param['showLogo']}&"
            f"transparent={param['transparent']}")
 
-    time.sleep(0.1)
+    path = "./data/chile_patches/"
+    f_name = country_name + "_" + str(tile[0]) + "_" + str(tile[1])
+    f_path = path + f_name
 
+    if not os.path.exists(f_path):
+        response = requests.get(url)
+        if response.status_code == 200:
+            with Image.open(BytesIO(response.content)) as img:
+                img.save(path + f_name + ".png", "png")
+                print(str(i), " of ", len(tiles), " tiles. (", path + f_name, ")")
+        else:
+            print(f"Error fetching tile: HTTP {response.status_code} - {response.text}")
+            error_files.append(url)
+        time.sleep(0.1)
 
-
-    response = requests.get(url)
-    if response.status_code == 200:
-        with Image.open(BytesIO(response.content)) as img:
-            path = "./data/chile_patches/"
-            f_name = country_name + "_" + str(tile[0]) + "_" + str(tile[1])
-            img.save(path + f_name + ".png", "png")
-            print(str(i), " of ", len(tiles), " tiles. (", path + f_name, ")")
-    else:
-        print(f"Error fetching tile: HTTP {response.status_code} - {response.text}")
-
+print(len(error_files), " files could not be downloaded")
+for f in error_files:
+    print(f)
