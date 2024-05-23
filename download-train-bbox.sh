@@ -1,5 +1,5 @@
-# This file downloads sentinel-2 granules of which our dataset has annotations for on certain dates which show
-# less cloud cover and cutting to the bbox roi
+# This file downloads sentinel-2 granules of which our dataset has annotations for. The dates are chosen, based on cloud coverage. 
+# After the download, the images are cut to the roi
 
 outfolder=./granules
 mkdir -p $outfolder

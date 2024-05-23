@@ -45,9 +45,9 @@ Run the following command
 ./download-train-bbox.sh
 ```
 
-This will create a sub-folder ```granules``` in which the whole Sentinel-2 granules are being downloaded, the folder, ```roi_images``` and ```roi_masks```  in which the roi-extracts of the Sentinel-2 granules for training are being downloaded. The mask roi's will be created as well, based on the file ```LSM_sectors.geojson```.
+This will create the sub-folders ```granules```, ```roi_images```, and ```roi_masks```. In ```granules```, the images are downloaded in the ```.SAFE``` format. In ```roi_images```, the mine site ROI's are stored and in ```roi_masks``` the corresponding masks, based on the file ```LSM_sectors.geojson``` are stored.
 
-The next step is the cutting into 256x256 pixel sized patches as ```*.png``` files for training and inference. To create the training patches, run:
+The next step is the creation of the 256x256 pixel sized patches as ```*.png``` files for training and inference. To create the training patches, run:
 
 ```bash
 ./crop-to-tiles.sh ./roi_images ./roi_masks
@@ -56,24 +56,22 @@ The next step is the cutting into 256x256 pixel sized patches as ```*.png``` fil
 This will create two new folders ```./roi_images_patches``` and ```./roi_masks_patches```.
 
 
-### Sentinel-2 images of (almost) whole Chile
+### (re-)Download of Sentinel-2 images of whole Chile
 
-The sentinel patches for the whole chile experiment need to be downloaded manually. 
-To run the download of all, in our experiments considered Chile Sentinel 2 images run:
+The sentinel patches for the whole chile experiment are downloaded with the Copernicus/SentinelHub WMTS service. To use this service, a few preparations are necessary:
+
+- create an account for [dataspace.copernicus.eu](dataspace.copernicus.eu)
+- add a ```configuration instance``` with a ```True color``` layer in the [Configuration Utility](https://shapps.dataspace.copernicus.eu/dashboard/#/configurations)
+- set ```image quality``` to 100
+- use your ```service endpoint ID``` and the ```secret ID``` in the ```./dl_chile_SHUB.py``` script
+
+To run the download of all patches of whole chile, simply run:
 
 ```bash
-./download-chile-cloud-free.sh
+./dl_chile_SHUB.py
 ```
 
-This will create a sub-folder ./chile_files in which the Sentinel-2 granules of Chile are being downloaded. The training roi that contains the mining sites will be downloaded with:
-
-
-
-To create the chile patches, rune
-```bash
-./crop-to-tiles.sh ./chile_files ./chile_patches
-```
-
+This will create a sub folder ./chile_patches in which the patches of whole chile are being downloaded. It will take a while and download around 300.000 ```.png``` files with a sum of around 8.5Gb of space.
 
 the final folder structure will look like this:
 
