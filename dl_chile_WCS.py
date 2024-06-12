@@ -57,7 +57,7 @@ class SentinelDownloader:
         pass
 
 
-    def download_urls(self):
+    def download_urls(self, path="out"):
 
         print("Downloading ", len(self.urls), " urls")
 
@@ -65,10 +65,10 @@ class SentinelDownloader:
         for url in self.urls:
 
             if "country" in self.parameter:
-                f_name, f_name_mask = self.download_url(url, self.parameter["country"])
+                f_name, f_name_mask = self.download_url(url, self.parameter["country"], out_path=path)
             else:
                 suff = self.parameter["roi_bbox"]
-                f_name, f_name_mask = self.download_url(url, "roi_" + str(suff))
+                f_name, f_name_mask = self.download_url(url, "roi_" + str(suff), out_path=path)
 
             dim_size, big_img_size = self.get_tile_sizes(self.parameter["desired_tile_size"],
                                                          self.parameter["max_request_size"])
@@ -439,20 +439,20 @@ if __name__ == "__main__":
                 myDownloader = SentinelDownloader(settings)
 
                 # download all urls
-                myDownloader.download_urls()
+                myDownloader.download_urls("rois")
 
 
 
     ### DOWNLOAD WHOLE CHILE ###
 
     # set parameter
-    # settings["country"] = "Chile"
-    # settings["roi_bbox"] = []
+    settings["country"] = "Chile"
+    settings["roi_bbox"] = []
 
     # create an instance of the downloader
-    # myDownloader = SentinelDownloader(settings)
+    myDownloader = SentinelDownloader(settings)
 
     # download all urls
-    # myDownloader.download_urls()
+    myDownloader.download_urls("CHILE")
     
     

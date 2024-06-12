@@ -1,57 +1,56 @@
 # run this script inside the source code folder
 
-root=./
+path=./
 
-mkdir -p $root/patches_img_testset
-mkdir -p $root/patches_img_trainset
-mkdir -p $root/patches_mask_testset
-mkdir -p $root/patches_mask_trainset
+mkdir -p $path/patches_img_testset
+mkdir -p $path/patches_img_trainset
+mkdir -p $path/patches_mask_testset
+mkdir -p $path/patches_mask_trainset
 
 # Define the regions of interest that are defined as test set
 lines=(
-  "T19JCJ_20210411T144721_TCI-71.022357_-28.844199_-70.953693_-28.752737"
-  "T19JCJ_20210413T143729_TCI-70.843829_-28.651555_-70.780658_-28.604544"
-  "T19JCJ_20210413T143729_TCI-70.865802_-28.34984_-70.747699_-28.237382"
-  "T19JCJ_20210413T143729_TCI-71.022357_-28.844199_-70.953693_-28.752737"
-  "T19JDN_20210413T143729_TCI-69.599628_-25.143551_-69.471912_-25.051522"
-  "T19JDN_20210413T143729_TCI-69.6216_-24.456657_-69.552936_-24.390386"
-  "T19KCQ_20220501T144719_TCI-69.964923_-22.687018_-69.791888_-22.424492"
-  "T19KDR_20220501T144719_TCI-69.496631_-22.928807_-69.153308_-22.678149"
-  "T19KDR_20220501T144719_TCI-69.964923_-22.687018_-69.791888_-22.424492"
-  "T19KDR_20220503T143731_TCI-69.496631_-22.928807_-69.153308_-22.678149"
-  "T19KDR_20220503T143731_TCI-69.964923_-22.687018_-69.791888_-22.424492"
-  "T19KDT_20220501T144719_TCI-69.350289_-20.130951_-69.177941_-19.983245"
-  "T19KDT_20220503T143731_TCI-69.350289_-20.130951_-69.177941_-19.983245"
-  "T19KDU_20220501T144719_TCI-69.350289_-20.130951_-69.177941_-19.983245"
-  "T19KEP_20220503T143731_TCI-68.88689_-23.510611_-68.742694_-23.34428"
-  "T19KEQ_20220503T143731_TCI-68.88689_-23.510611_-68.742694_-23.34428"
-  "T19KER_20220503T143731_TCI-68.837837_-22.385967_-68.822946_-22.373626"
+    "roi_\[-70.187396, -27.599106, -70.361804, -27.395674\]_0_0"
+    "roi_\[-70.319232, -34.122725, -70.536212, -34.05221\]_0_0"
+    "roi_\[-68.742694, -23.510611, -68.88689, -23.34428\]_0_0"
+    "roi_\[-71.042956, -30.309592, -71.155566, -30.16722\]_0_0"
+    "roi_\[-70.838336, -32.601905, -70.908374, -32.553302\]_0_0"
+    "roi_\[-71.347827, -30.034153, -71.376666, -30.004426\]_0_0"
+    "roi_\[-68.604592, -22.090307, -68.892984, -21.858526\]_1_1"
+    "roi_\[-69.2, -26.866472, -69.307117, -26.729182\]_0_0"
+    "roi_\[-68.520822, -21.076386, -68.896417, -20.866085\]_1_0"
+    "roi_\[-69.232959, -27.588152, -69.344195, -27.511445\]_0_0"
+    "roi_\[-69.802875, -25.889626, -69.978656, -25.741278\]_0_0"
+    "roi_\[-70.565051, -25.688075, -70.611743, -25.641038\]_0_0"
+    "roi_\[-69.926471, -29.837791, -70.039081, -29.697126\]_0_0"
+    "roi_\[-71.593646, -52.900706, -71.756381, -52.809075\]_0_0"
+    "roi_\[-70.194263, -33.248571, -70.394763, -33.053111\]_0_0"
+    "roi_\[-71.200885, -29.766291, -71.268176, -29.684003\]_0_0"
+    "roi_\[-68.604592, -22.090307, -68.892984, -21.858526\]_0_1"
+    "roi_\[-70.747699, -28.34984, -70.865802, -28.237382\]_0_0"
 )
 
 echo copying patches to trainset
-rsync -r $root/roi_images_patches/ $root/patches_img_trainset/
-# cp $root/roi_images_patches/* $root/patches_img_trainset/
+rsync -r $path/rois/patches/ $path/patches_img_trainset/
 
 echo copying masks to trainset
-rsync -r $root/roi_masks_patches/ $root/patches_mask_trainset/
-# cp $root/roi_masks_patche/* $root/patches_mask_trainset/
+rsync -r $path/rois/masks/patches/ $path/patches_mask_trainset/
 
 echo moving patches to testset
 # move files containing the specified lines to patches img test folder
 for line in "${lines[@]}"; do
-  find $root/patches_img_trainset -name *$line* -exec mv {} $root/patches_img_testset/ \;
+  find $path/patches_img_trainset -name "*$line*" -exec mv {} $path/patches_img_testset/ \;
 done
 
 echo train-patches:
-ls -l $root/patches_img_trainset | wc -l
+ls -l $path/patches_img_trainset | wc -l
 
 echo moving masks to testset
 # copy files containing the specified lines to patches mask test folder
 for line in "${lines[@]}"; do
-  find $root/patches_mask_trainset -name *$line* -exec mv {} $root/patches_mask_testset/ \;
+  find $path/patches_mask_trainset -name "*$line*" -exec mv {} $path/patches_mask_testset/ \;
 done
 
 echo test-patches:
-ls -l $root/patches_img_testset | wc -l
+ls -l $path/patches_img_testset | wc -l
 
 echo "images and masks are moved to test set"
