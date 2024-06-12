@@ -12,7 +12,7 @@ import torch
 import cv2
 from torch.nn import DataParallel
 import segmentation_models_pytorch as smp
-
+import rasterio
 from utils import prepare_plot, set_seed, init_device
 
 
@@ -64,11 +64,25 @@ def predict(cfg: DictConfig):
     # iterate over the randomly selected test image paths
     model.eval()
     for filename in tqdm(filenames):
+
         # load image
         image_path = os.path.join(cfg.test_image_dir, filename)
-        image = cv2.imread(image_path)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image = image.astype("float32")
+        # image_cv2 = cv2.imread(image_path)
+        # image_cv2 = cv2.cvtColor(image_cv2, cv2.COLOR_BGR2RGB)
+        # image_cv2 = image_cv2.astype("float32")
+
+        # read the geotiff meta data
+        with rasterio.open(image_path) as geo_tiff:
+            meta = geo_tiff.meta  # Keep the original metadata
+
+            # for mask
+            meta.update({
+                'count': 1  # Number of bands; grayscale has only one band
+                #'dtype': grayscale_data.dtype  # Ensure dtype matches the data type of grayscale_data
+            })
+
+            image = np.fliplr(np.rot90(geo_tiff.read().T[:, :, :-1], 3))
+            image = image.astype("float32")
 
         # do padding
         height, width = image.shape[:2]
@@ -82,7 +96,6 @@ def predict(cfg: DictConfig):
 
         image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_CONSTANT, value=[0,0,0])
         # mask = cv2.copyMakeBorder(mask, top, bottom, left, right, cv2.BORDER_CONSTANT, value=[0,0,0])
-
 
         # resize the image and make a copy of it for visualization
         origin = image.copy().astype(np.uint8)
@@ -100,27 +113,46 @@ def predict(cfg: DictConfig):
             pred_mask = pred_mask.cpu().numpy()
 
         # convert prediction to integers
-        pred_mask = pred_mask.astype(np.uint8) 
-        
+        pred_mask = pred_mask.astype(np.uint8)
+
         # in case we have no GT data
         if cfg.test_mask_dir == '':
-            
-            # write the prediction mask as image
-            cv2.imwrite(os.path.join(cfg.result_dir, filename), pred_mask)
-            
+
+            # if mine site is found
+            if pred_mask.max() > 0:
+
+                # write the prediction mask as png image
+                # cv2.imwrite(os.path.join(cfg.result_dir, "_" + filename[:-4] + "_mask.png"), pred_mask)
+
+                # save the geotiff meta data to mask file
+                with rasterio.open(os.path.join(cfg.result_dir, "_" + filename[:-4] + "_mask.tif"), "w", **meta) as dst:
+                    dst.write(np.expand_dims(pred_mask, axis=0))
+
+                # prepare plot for visual comparison
+                prepare_plot(os.path.join(cfg.result_dir, "_" + filename[:-4] + ".png"), origin, None, pred_mask, cfg.classes)
+
+            else:
+                # write the prediction mask as png image
+                # cv2.imwrite(os.path.join(cfg.result_dir, filename[:-4] + "_mask.png"), pred_mask)
+
+                # save the geotiff meta data to mask file
+                with rasterio.open(os.path.join(cfg.result_dir, filename[:-4] + "_mask.tif"), "w", **meta) as dst:
+                    dst.write(np.expand_dims(pred_mask, axis=0))
+
+                # prepare plot for visual comparison
+                prepare_plot(os.path.join(cfg.result_dir, filename[:-4] + ".png"), origin, None, pred_mask,
+                             cfg.classes)
+
             if not os.path.exists(f'{cfg.result_dir}'):
                 os.makedirs(f'{cfg.result_dir}')
-            
-            # show plot without GT
-            prepare_plot(os.path.join(cfg.result_dir, filename), origin, None, pred_mask, cfg.classes)
 
         else:
-            
+
             # find the filename and generate the path to ground truth mask
             gt_path = os.path.join(cfg.test_mask_dir, filename)
 
             # load the ground-truth segmentation mask in grayscale mode and resize it
-            gt_mask = cv2.imread(gt_path, 0)            
+            gt_mask = cv2.imread(gt_path, 0)
 
             # remap gt mask if needed
             if cfg.remapping is not None:

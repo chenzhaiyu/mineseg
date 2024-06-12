@@ -11,7 +11,7 @@ checkpoint_dir: './checkpoints/${model}${run_suffix}'
 checkpoint_path: '${checkpoint_dir}/checkpoint_49.pth'
 train_image_dir: '${data_root}/patches_img_trainset'
 train_mask_dir: '${data_root}/patches_mask_trainset'
-test_image_dir: '${data_root}/patches_img_testset'
+test_image_dir: '${data_root}/out/patches'
 test_mask_dir: '${data_root}/patches_mask_testset'
 
 result_dir: './outputs/${model}${run_suffix}'
