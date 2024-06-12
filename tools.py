@@ -122,8 +122,8 @@ def get_concat_v_multi(images):
     return dst
 
 # Specify the directory containing the images
-directory = 'path/to/your/images'
-stack_images(directory)
+# directory = 'path/to/your/images'
+# stack_images(directory)
 
 
 

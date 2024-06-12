@@ -2,7 +2,7 @@
 # config = SHConfig()
 # config.sh_client_id = 'sh-88c69072-5120-4de8-bf84-d4326f36bfbc'
 # config.sh_client_secret = 'NMxn75qH0zD80uteBet7zX0wzirn5FqR'
-
+import csv
 import math
 from osgeo import gdal
 import os.path
@@ -15,6 +15,7 @@ from geopy.point import Point
 from pyproj import Proj, Transformer
 import simplekml
 import urllib.request
+import tools
 
 
 
@@ -24,13 +25,34 @@ class SentinelDownloader:
         # take all settings
         self.parameter = settings
 
-        # get country polygon
-        print("Download country polygon")
-        self.country_polygon = self.get_polygon_of_country(self.parameter["country"])
 
-        # get get Download URLs
-        print("get download Urls")
-        self.urls = self.get_urls(self.country_polygon, self.parameter)
+        if "country" in self.parameter:
+
+            # get country polygon
+            print("Download country polygon")
+            self.country_polygon = self.get_polygon_of_country(self.parameter["country"])
+
+            # get get Download URLs
+            print("get download Urls")
+            self.urls = self.get_urls(self.country_polygon, self.parameter)
+
+        elif "roi_bbox" in self.parameter:
+
+            # get bbox polygon
+            print("Download bbox polygon")
+            self.bbox_polygon = box(self.parameter["roi_bbox"][0],
+                                    self.parameter["roi_bbox"][1],
+                                    self.parameter["roi_bbox"][2],
+                                    self.parameter["roi_bbox"][3])
+
+            self.urls = self.get_urls(self.bbox_polygon, parameter=self.parameter)
+
+
+        else:
+            print("Define a country or bbox")
+            exit(1)
+
+
 
         pass
 
@@ -41,14 +63,23 @@ class SentinelDownloader:
 
         # go through all urls
         for url in self.urls:
-            f_name = self.download_url(url, self.parameter["country"])
+
+            if "country" in self.parameter:
+                f_name, f_name_mask = self.download_url(url, self.parameter["country"])
+            else:
+                suff = self.parameter["roi_bbox"]
+                f_name, f_name_mask = self.download_url(url, "roi_" + str(suff))
+
             dim_size, big_img_size = self.get_tile_sizes(self.parameter["desired_tile_size"],
                                                          self.parameter["max_request_size"])
 
-            # split the files into desired tiles
-            if not os.path.exists(f_name):
-                print("    Split ", f_name)
-                self.split_geotiff(f_name, "./out/patches", dim_size)
+            # split the image files into desired tiles
+            print("    Split ", f_name)
+            self.split_geotiff(f_name, "./out/patches", dim_size)
+
+            # split the mask files into desired tiles
+            print("    Split mask ", f_name_mask)
+            self.split_geotiff(f_name_mask, "./out/masks/patches", dim_size)
 
 
 
@@ -159,24 +190,6 @@ class SentinelDownloader:
         proj_latlon = Proj(proj='latlong', datum='WGS84')
         transformer = Transformer.from_proj(proj_latlon, proj_utm)
         return transformer.transform(lat, lon), zone
-
-
-
-    def process_chile(self, big_bbox, tile_collection_size):
-        # Approximate bounding box of Chile in degrees
-        # bbox_degrees = (-75.644, -55.611, -66.959, -17.506)  # (min_lon, min_lat, max_lon, max_lat)
-
-        bbox_degrees = big_bbox
-
-        # Convert each corner to UTM and print
-        corners = ["SW", "NW", "NE", "SE"]
-        corner_coords = [(bbox_degrees[1], bbox_degrees[0]), (bbox_degrees[3], bbox_degrees[0]),
-                         (bbox_degrees[3], bbox_degrees[2]), (bbox_degrees[1], bbox_degrees[2])]
-
-        for corner, coords in zip(corners, corner_coords):
-            utm_coords = self.convert_to_utm(coords[0], coords[1])
-            print(f"{corner} corner in UTM: {utm_coords}")
-
 
 
     # country bbox: (lon_min, lat_min, lon_max, lat_max)
@@ -303,10 +316,11 @@ class SentinelDownloader:
     def download_url(self, url, file_name_suffix="img", out_path="./out/"):
 
         os.makedirs(out_path, exist_ok=True)
+        os.makedirs(os.path.join(out_path, "masks"), exist_ok=True)
 
-        # generate file name and path
+        # generate image file name and path
         f_name = file_name_suffix + "_" + str(url["hpos"]) + "_" + str(url["vpos"])
-        f_path = out_path + f_name + ".tif"
+        f_path = os.path.join(out_path, f_name + ".tif")
 
         # check if file already exist
         if not os.path.exists(f_path):
@@ -317,7 +331,16 @@ class SentinelDownloader:
             print("finished download of " + f_path)
 
             time.sleep(1)
-        return f_path
+
+        # generate mask file name and path
+        f_path_msk = os.path.join(out_path, "masks", f_name + ".tif")
+
+        # check if file already exist
+        if self.parameter["labels"]:
+            if not os.path.exists(f_path_msk):
+                tools.create_binary_raster(self.parameter["labels"], f_path_msk, f_path)
+
+        return f_path, f_path_msk
 
 
     def precise_new_location(self, lat, lon, dist_to_west, dist_to_south):
@@ -374,10 +397,9 @@ class SentinelDownloader:
 
 if __name__ == "__main__":
 
-    # set parameter
     settings = {}
-    settings["country"] = "Chile"
     # settings["client_id"] = "15705528-7c35-4373-b499-d1b6b86015a6"  # matthias.kahl@tum.de
+    settings["labels"] = "./LSM_sectors.geojson"
     settings["client_id"] = "3c701f12-dc13-482a-b9eb-27d02019b503"  # matthias.kahl@tum.de
     settings["desired_tile_size"] = 256
     settings["max_request_size"] = 2500
@@ -391,8 +413,46 @@ if __name__ == "__main__":
     settings["time_start"] = "2021-01-01"
     settings["time_end"] = "2022-12-31"
 
+
+
+    ### DOWNLOAD Mine Sites ROIs ###
+
+    with open("mine_rois.csv", newline="") as csvfile:
+
+        # csv reader
+        reader = csv.reader(csvfile)
+
+        # go through each line in csv
+        for row in reader:
+
+            # csv reader
+            reader = csv.reader("mine_rois.csv")
+
+            # read coordinates
+            if row:
+                coordinates = list(float(coord) for coord in row)
+
+                # settings["roi_bbox"] = [west, south, east, north]
+                settings["roi_bbox"] = coordinates
+
+                # create an instance of the downloader
+                myDownloader = SentinelDownloader(settings)
+
+                # download all urls
+                myDownloader.download_urls()
+
+
+
+    ### DOWNLOAD WHOLE CHILE ###
+
+    # set parameter
+    # settings["country"] = "Chile"
+    # settings["roi_bbox"] = []
+
     # create an instance of the downloader
-    myDownloader = SentinelDownloader(settings)
+    # myDownloader = SentinelDownloader(settings)
 
     # download all urls
-    myDownloader.download_urls()
+    # myDownloader.download_urls()
+    
+    
