@@ -191,6 +191,8 @@ def train(cfg: DictConfig):
 
         f1_valid, precision_valid, recall_valid, confusion_valid, macro_valid, micro_valid, weighted_valid = 0, 0, 0, 0, 0, 0, 0
 
+
+        # VALIDATION DATASET
         # show validation progress
         pbar_valid = tqdm(valid_dataloader, desc=f'epoch {i}')
         for (images, targets) in pbar_valid:
@@ -241,6 +243,8 @@ def train(cfg: DictConfig):
         wandb.log({"precision_valid": precision_valid})
         wandb.log({"recall_valid": recall_valid})
 
+
+        # TEST DATASET
         # evaluation epoch
         torch.cuda.empty_cache()
         model.eval()

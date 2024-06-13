@@ -3,7 +3,7 @@ import os
 import cv2
 import torch
 from torch.utils.data import DataLoader, Dataset
-
+import matplotlib.pyplot as plt
 
 class MiningSectorDataset(Dataset):
     def __init__(self, image_dir, mask_dir, remapping):
@@ -24,7 +24,8 @@ class MiningSectorDataset(Dataset):
         # read data
         try:
             image = cv2.imread(image_path)
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+            # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # the geotiff are already RGB
             mask = cv2.imread(mask_path, 0)
         except Exception as e:
             print("error in file: ", image_path)
