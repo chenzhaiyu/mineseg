@@ -223,17 +223,17 @@ def train(cfg: DictConfig):
         precision_valid /= len(pbar_valid)
         recall_valid /= len(pbar_valid)
         
-        # write epoch-wise validation result
+        '''# write epoch-wise validation result
         pbar_valid.set_postfix_str(
             'loss={:.4f}, metric_macro={:.4f}, metric_micro={:.4f}, metric_weighted={:.4f}, f1={:.4f}, precision={:.4f}, '
             'recall={:.4f}'.format(loss_valid, macro_valid, micro_valid, weighted_valid, f1_valid, precision_valid,
-                                   recall_valid))
+                                   recall_valid))'''
 
         # console evaluation logging
         logger.info(
-            'Test: metric_macro={:.4f}, metric_micro={:.4f}, metric_weighted={:.4f}, f1={:.4f}, precision={:.4f}, '
+            'VALID: metric_macro={:.4f}, metric_micro={:.4f}, metric_weighted={:.4f}, f1={:.4f}, precision={:.4f}, '
             'recall={:.4f}'.format(macro_valid, micro_valid, weighted_valid, f1_valid, precision_valid, recall_valid))
-        logger.info(f'Confusion matrix: \n{matrix_to_string(confusion_valid)}')
+        logger.info(f'Confusion matrix VALID: \n{matrix_to_string(confusion_valid)}')
 
         # wandb valid logging
         wandb.log({"macro_valid": macro_valid})
@@ -273,9 +273,9 @@ def train(cfg: DictConfig):
 
         # console evaluation logging
         logger.info(
-            'Test: metric_macro={:.2f}, metric_micro={:.2f}, metric_weighted={:.2f}, f1={:.2f}, precision={:.2f}, '
+            'TEST: metric_macro={:.2f}, metric_micro={:.2f}, metric_weighted={:.2f}, f1={:.2f}, precision={:.2f}, '
             'recall={:.2f}'.format(macro_test, micro_test, weighted_test, f1_test, precision_test, recall_test))
-        logger.info(f'Confusion matrix: \n{matrix_to_string(confusion_test)}')
+        logger.info(f'Confusion matrix TEST: \n{matrix_to_string(confusion_test)}')
 
         # wandb evaluation logging
         wandb.log({"macro_test": macro_test})
