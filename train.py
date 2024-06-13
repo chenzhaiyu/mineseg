@@ -43,6 +43,9 @@ def train(cfg: DictConfig):
                                  image_dir=cfg.train_image_dir, mask_dir=cfg.train_mask_dir, remapping=cfg.remapping)
     test_dataloader = load_data(batch_size=cfg.batch_size, num_workers=cfg.num_workers,
                                 image_dir=cfg.test_image_dir, mask_dir=cfg.test_mask_dir, remapping=cfg.remapping)
+    valid_dataloader = load_data(batch_size=cfg.batch_size, num_workers=cfg.num_workers,
+                                image_dir=cfg.valid_image_dir, mask_dir=cfg.valid_mask_dir, remapping=cfg.remapping)
+
 
     # define model: Unet, UnetPlusPlus, FPN, DeepLabV3, DeepLabV3Plus
     if cfg.model == 'unet':
@@ -75,22 +78,31 @@ def train(cfg: DictConfig):
     model = DataParallel(model, device_ids=cfg.gpu_ids)
     model.to(device)
 
+    # Class weighting for imbalance handling
+    class_weights = torch.tensor([1, 100], device=device)  
+    class_weights = torch.FloatTensor([1,100]).cuda()
+
     # define loss
     if cfg.loss == 'dice':
         loss = smp.losses.DiceLoss(mode='multiclass')
     elif cfg.loss == 'focal':
         loss = smp.losses.FocalLoss(mode='multiclass')
     elif cfg.loss == 'ce':
-        loss = CrossEntropyLoss()
+        loss = CrossEntropyLoss(weight=class_weights)
+        # loss = CrossEntropyLoss()
     else:
         raise ValueError(f'Unexpected loss: {cfg.loss}')
 
     # define optimizer and scheduler
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
     # https://github.com/pytorch/pytorch/issues/90414 & https://github.com/pytorch/pytorch/pull/91400
+
+    '''
     scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=cfg.scheduler.base_lr, max_lr=cfg.scheduler.max_lr,
                                                   step_size_up=cfg.scheduler.step_size_up, mode=cfg.scheduler.mode,
-                                                  cycle_momentum=False)
+                                                  cycle_momentum=False)'''
+
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
 
     # define metrics
     metric_macro = MulticlassAccuracy(num_classes=len(cfg.classes), average="macro").to(device)
@@ -141,14 +153,17 @@ def train(cfg: DictConfig):
         # wandb epoch logging
         wandb.log({"epoch": i})
         wandb.log({"learning_rate": optimizer.param_groups[0]['lr']})
-        
-        
+
+        # show training progress
         for (images, targets) in pbar_train:
             images = images.to(device)
             targets = targets.squeeze().to(device)
 
             optimizer.zero_grad()
-            outs = model(images)
+            outs = model(images).float()
+            # pdb.set_trace()
+
+            # compute metrics
             loss_train = loss(outs, targets)
             macro_train = metric_macro(outs, targets)
             micro_train = metric_micro(outs, targets)
@@ -167,12 +182,64 @@ def train(cfg: DictConfig):
             wandb.log({"recall_train": recall_train})
 
             pbar_train.set_postfix_str(
-                'loss={:.2f}, metric_macro={:.2f}, metric_micro={:.2f}, metric_weighted={:.2f}, f1={:.2f}, precision={:.2f}, '
-                'recall={:.2f}'.format(loss_train, macro_train, micro_train, weighted_train, f1_train, precision_train, recall_train))
+                'loss={:.4f}, metric_macro={:.4f}, metric_micro={:.4f}, metric_weighted={:.4f}, f1={:.4f}, precision={:.4f}, '
+                'recall={:.4f}'.format(loss_train, macro_train, micro_train, weighted_train, f1_train, precision_train, recall_train))
 
             loss_train.backward()
             optimizer.step()
-            scheduler.step()
+
+
+        f1_valid, precision_valid, recall_valid, confusion_valid, macro_valid, micro_valid, weighted_valid = 0, 0, 0, 0, 0, 0, 0
+
+        # show validation progress
+        pbar_valid = tqdm(valid_dataloader, desc=f'epoch {i}')
+        for (images, targets) in pbar_valid:
+            images = images.to(device)
+            targets = targets.squeeze().to(device)
+
+            optimizer.zero_grad()
+            outs = model(images)
+            
+            # compute metrics
+            loss_valid = loss(outs, targets)
+            macro_valid += metric_macro(outs, targets)
+            micro_valid += metric_micro(outs, targets)
+            weighted_valid += metric_weighted(outs, targets)
+            f1_valid += f1(outs, targets)
+            precision_valid += precision(outs, targets)
+            recall_valid += recall(outs, targets)
+            confusion_valid += confusion_matrix(outs, targets)
+
+            scheduler.step(loss_valid)
+
+        # calculate the average
+        loss_valid /= len(pbar_valid)
+        macro_valid /= len(pbar_valid)
+        micro_valid /= len(pbar_valid)
+        weighted_valid /= len(pbar_valid)
+        f1_valid /= len(pbar_valid)
+        precision_valid /= len(pbar_valid)
+        recall_valid /= len(pbar_valid)
+        
+        # write epoch-wise validation result
+        pbar_valid.set_postfix_str(
+            'loss={:.4f}, metric_macro={:.4f}, metric_micro={:.4f}, metric_weighted={:.4f}, f1={:.4f}, precision={:.4f}, '
+            'recall={:.4f}'.format(loss_valid, macro_valid, micro_valid, weighted_valid, f1_valid, precision_valid,
+                                   recall_valid))
+
+        # console evaluation logging
+        logger.info(
+            'Test: metric_macro={:.4f}, metric_micro={:.4f}, metric_weighted={:.4f}, f1={:.4f}, precision={:.4f}, '
+            'recall={:.4f}'.format(macro_valid, micro_valid, weighted_valid, f1_valid, precision_valid, recall_valid))
+        logger.info(f'Confusion matrix: \n{matrix_to_string(confusion_valid)}')
+
+        # wandb valid logging
+        wandb.log({"macro_valid": macro_valid})
+        wandb.log({"micro_valid": micro_valid})
+        wandb.log({"weighted_valid": weighted_valid})
+        wandb.log({"f1_valid": f1_valid})
+        wandb.log({"precision_valid": precision_valid})
+        wandb.log({"recall_valid": recall_valid})
 
         # evaluation epoch
         torch.cuda.empty_cache()
@@ -213,7 +280,7 @@ def train(cfg: DictConfig):
         wandb.log({"f1_test": f1_test})
         wandb.log({"precision_test": precision_test})
         wandb.log({"recall_test": recall_test})
-
+        
         # save checkpoint
         state = {
             'epoch': i,
@@ -228,10 +295,10 @@ def train(cfg: DictConfig):
         # Cannot pickle 'WeakMethod' object when saving state_dict for CyclicLr
         # https://github.com/pytorch/pytorch/pull/91400
         torch.save(state, f'{cfg.checkpoint_dir}/checkpoint_{i}.pth')
-        if macro_test > best_accuracy:
+        if macro_valid > best_accuracy:
             torch.save(state, f'{cfg.checkpoint_path}')
             logger.info(f'Saving checkpoint to {cfg.checkpoint_path}.')
-            best_accuracy = macro_test
+            best_accuracy = macro_valid
 
 
 if __name__ == '__main__':

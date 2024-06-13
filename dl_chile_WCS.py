@@ -454,5 +454,4 @@ if __name__ == "__main__":
 
     # download all urls
     myDownloader.download_urls("CHILE")
-    
-    
+
