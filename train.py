@@ -1,7 +1,6 @@
 """
 Supervised training for multi-class mining site segmentation.
 """
-
 import os
 import logging
 import pdb
@@ -14,7 +13,6 @@ from torchmetrics import F1Score, Precision, Recall, ConfusionMatrix
 from torchmetrics.classification import MulticlassAccuracy
 import segmentation_models_pytorch as smp
 from torch.nn import DataParallel, CrossEntropyLoss
-
 from dataset import load_data
 from utils import matrix_to_string, set_seed, init_device
 
@@ -79,8 +77,7 @@ def train(cfg: DictConfig):
     model.to(device)
 
     # Class weighting for imbalance handling
-    class_weights = torch.tensor([1, 100], device=device)  
-    class_weights = torch.FloatTensor([1,100]).cuda()
+    class_weights = torch.FloatTensor([1,20]).cuda()
 
     # define loss
     if cfg.loss == 'dice':
@@ -88,8 +85,8 @@ def train(cfg: DictConfig):
     elif cfg.loss == 'focal':
         loss = smp.losses.FocalLoss(mode='multiclass')
     elif cfg.loss == 'ce':
-        loss = CrossEntropyLoss(weight=class_weights)
-        # loss = CrossEntropyLoss()
+        # loss = CrossEntropyLoss(weight=class_weights)
+        loss = CrossEntropyLoss()
     else:
         raise ValueError(f'Unexpected loss: {cfg.loss}')
 
@@ -97,12 +94,12 @@ def train(cfg: DictConfig):
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
     # https://github.com/pytorch/pytorch/issues/90414 & https://github.com/pytorch/pytorch/pull/91400
 
-    '''
+    
     scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=cfg.scheduler.base_lr, max_lr=cfg.scheduler.max_lr,
                                                   step_size_up=cfg.scheduler.step_size_up, mode=cfg.scheduler.mode,
-                                                  cycle_momentum=False)'''
+                                                  cycle_momentum=False)
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
 
     # define metrics
     metric_macro = MulticlassAccuracy(num_classes=len(cfg.classes), average="macro").to(device)
@@ -146,6 +143,8 @@ def train(cfg: DictConfig):
     # start training
     for i in epoch_generator:
 
+        print(f"\n\n")
+
         # training epoch
         model.train()
         pbar_train = tqdm(train_dataloader, desc=f'epoch {i}')
@@ -161,7 +160,6 @@ def train(cfg: DictConfig):
 
             optimizer.zero_grad()
             outs = model(images).float()
-            # pdb.set_trace()
 
             # compute metrics
             loss_train = loss(outs, targets)
@@ -212,7 +210,8 @@ def train(cfg: DictConfig):
             recall_valid += recall(outs, targets)
             confusion_valid += confusion_matrix(outs, targets)
 
-            scheduler.step(loss_valid)
+            scheduler.step()
+            # scheduler.step(loss_valid)  # for ReduceLROnPlateau Scheduler
 
         # calculate the average
         loss_valid /= len(pbar_valid)
@@ -223,17 +222,13 @@ def train(cfg: DictConfig):
         precision_valid /= len(pbar_valid)
         recall_valid /= len(pbar_valid)
         
-        # write epoch-wise validation result
-        pbar_valid.set_postfix_str(
-            'loss={:.4f}, metric_macro={:.4f}, metric_micro={:.4f}, metric_weighted={:.4f}, f1={:.4f}, precision={:.4f}, '
-            'recall={:.4f}'.format(loss_valid, macro_valid, micro_valid, weighted_valid, f1_valid, precision_valid,
-                                   recall_valid))
 
         # console evaluation logging
+        print("performance on VALIDATION Set:")
         logger.info(
-            'Test: metric_macro={:.4f}, metric_micro={:.4f}, metric_weighted={:.4f}, f1={:.4f}, precision={:.4f}, '
+            'metric_macro={:.4f}, metric_micro={:.4f}, metric_weighted={:.4f}, f1={:.4f}, precision={:.4f}, '
             'recall={:.4f}'.format(macro_valid, micro_valid, weighted_valid, f1_valid, precision_valid, recall_valid))
-        logger.info(f'Confusion matrix: \n{matrix_to_string(confusion_valid)}')
+        logger.info(f'Confusion matrix VALID: \n{matrix_to_string(confusion_valid)}')
 
         # wandb valid logging
         wandb.log({"macro_valid": macro_valid})
@@ -272,10 +267,11 @@ def train(cfg: DictConfig):
         weighted_test /= len(pbar_test)
 
         # console evaluation logging
+        print("performance on TEST Set:")
         logger.info(
-            'Test: metric_macro={:.2f}, metric_micro={:.2f}, metric_weighted={:.2f}, f1={:.2f}, precision={:.2f}, '
+            '\nTEST: metric_macro={:.2f}, metric_micro={:.2f}, metric_weighted={:.2f}, f1={:.2f}, precision={:.2f}, '
             'recall={:.2f}'.format(macro_test, micro_test, weighted_test, f1_test, precision_test, recall_test))
-        logger.info(f'Confusion matrix: \n{matrix_to_string(confusion_test)}')
+        logger.info(f'Confusion matrix TEST: \n{matrix_to_string(confusion_test)}')
 
         # wandb evaluation logging
         wandb.log({"macro_test": macro_test})
