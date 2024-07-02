@@ -8,6 +8,7 @@ from osgeo import gdal
 import os.path
 import time
 import geopandas as gpd
+from shapely.geometry import shape
 from shapely.geometry import Polygon, box
 from urllib.request import urlretrieve
 from geopy.distance import geodesic
@@ -16,7 +17,7 @@ from pyproj import Proj, Transformer
 import simplekml
 import urllib.request
 import tools
-
+import json
 
 
 class SentinelDownloader:
@@ -34,7 +35,7 @@ class SentinelDownloader:
 
             # get get Download URLs
             print("get download Urls")
-            self.urls = self.get_urls(self.country_polygon, self.parameter)
+            self.urls = self.get_urls(self.country_polygon)
 
         elif "roi_bbox" in self.parameter:
 
@@ -45,7 +46,7 @@ class SentinelDownloader:
                                     self.parameter["roi_bbox"][2],
                                     self.parameter["roi_bbox"][3])
 
-            self.urls = self.get_urls(self.bbox_polygon, parameter=self.parameter)
+            self.urls = self.get_urls(self.bbox_polygon)
 
 
         else:
@@ -70,20 +71,31 @@ class SentinelDownloader:
                 suff = self.parameter["roi_bbox"]
                 f_name, f_name_mask = self.download_url(url, "roi_" + str(suff), out_path=path)
 
-            dim_size, big_img_size = self.get_tile_sizes(self.parameter["desired_tile_size"],
+
+
+            west, south, east, north = self.parameter["roi_bbox"]
+
+            size_x = self.next_divisible_by_256(geodesic((north, east), (north, west)).meters / 10,
+                                                self.parameter["desired_tile_size"])
+
+            size_y = self.next_divisible_by_256(geodesic((north, east), (south, east)).meters / 10,
+                                                self.parameter["desired_tile_size"])
+
+            dim_size, big_img_size = self.get_tile_sizes(max(size_x, size_y),
+                                                         self.parameter["desired_tile_size"],
                                                          self.parameter["max_request_size"])
 
             # split the image files into desired tiles
             print("    Split ", f_name)
-            self.split_geotiff(f_name, "./out/patches", dim_size)
+            self.split_geotiff(f_name, os.path.join(path, "patches"), dim_size)
 
             # split the mask files into desired tiles
             print("    Split mask ", f_name_mask)
-            self.split_geotiff(f_name_mask, "./out/masks/patches", dim_size)
+            self.split_geotiff(f_name_mask, os.path.join(path, "masks", "patches"), dim_size)
 
 
 
-    def create_rectangle_kml(self, nw, se, filename="rectangle.kml"):
+    def create_rectangle_kml(self, wn, es, filename="rectangle.kml"):
         """
         Generates a KML file with a rectangle defined by the north-west and south-east corners.
         call: create_rectangle_kml((pos_west, pos_north), (pos_east, pos_south))
@@ -95,13 +107,14 @@ class SentinelDownloader:
         The function calculates the north-east and south-west corners to complete the rectangle.
         """
         # Calculate the missing corners
-        ne = (nw[0], se[1])  # North-east corner (same latitude as nw, longitude of se)
-        sw = (se[0], nw[1])  # South-west corner (same longitude as nw, latitude of se)
+        ne = (wn[0], es[1])  # North-east corner (same latitude as nw, longitude of se)
+        sw = (es[0], wn[1])  # South-west corner (same longitude as nw, latitude of se)
 
         # Define the rectangle corners in order
-        corners = [nw, ne, se, sw, nw]  # Added nw again to close the polygon
+        corners = [wn, ne, es, sw, wn]  # Added nw again to close the polygon
 
-        kml = simplekml.Kml()
+        global kml
+
         # Create a polygon
         pol = kml.newpolygon(name="Rectangle")
         pol.linestyle.width = 2
@@ -112,15 +125,14 @@ class SentinelDownloader:
         # Define the outer boundary of the polygon
         pol.outerboundaryis = corners
 
-        # Save the KML to a file
-        kml.save(filename)
-        print(f"KML file '{filename}' has been created.")
 
 
     # must be square
-    def get_tile_sizes(self, desired_tile_size=256, max_request_size=2500):
+    def get_tile_sizes(self, actual_request_size, desired_tile_size=256, max_request_size=2500):
+
+        square_edge_size = min(max_request_size, actual_request_size)
         if 32 <= desired_tile_size <= 1024:
-            num_tiles = max_request_size // desired_tile_size
+            num_tiles = square_edge_size // desired_tile_size
             return num_tiles, desired_tile_size * num_tiles
         else:
             return "Value must be between 32 and 1024"
@@ -191,20 +203,35 @@ class SentinelDownloader:
         transformer = Transformer.from_proj(proj_latlon, proj_utm)
         return transformer.transform(lat, lon), zone
 
+    def next_divisible_by_256(self, dividend, divisor):
+        """ Returns the smallest number greater than or equal to `n` that is divisible by 256 """
+        if dividend % divisor == 0:
+            return dividend  # n is already divisible by divisor
+        else:
+            return int(round((dividend + divisor) - (dividend % divisor)))
+
 
     # country bbox: (lon_min, lat_min, lon_max, lat_max)
     # country bbox: (west,    south,   east,    north)
-    def get_urls(self, country_polygon, parameter):
+    def get_urls(self, roi_polygon):
 
-        west, south, east, north = country_polygon.bounds
+        west, south, east, north = roi_polygon.bounds
 
-        tiles_per_dim, tile_collection_px_per_dim = self.get_tile_sizes(desired_tile_size=parameter["desired_tile_size"],
-                                                                   max_request_size=parameter["max_request_size"])
+        size_x = self.next_divisible_by_256(geodesic((north, east), (north, west)).meters / 10,
+                                            self.parameter["desired_tile_size"])
+
+        size_y = self.next_divisible_by_256(geodesic((north, east), (south, east)).meters / 10,
+                                            self.parameter["desired_tile_size"])
+
+
+        tiles_per_dim, tile_collection_px_per_dim = self.get_tile_sizes(actual_request_size=max(size_x, size_y),
+                                                    desired_tile_size=self.parameter["desired_tile_size"],
+                                                    max_request_size=self.parameter["max_request_size"])
 
         # get the bigbox distance in meters
-        dist_in_meter = parameter["desired_tile_size"] * tiles_per_dim * parameter["gsd"]
+        dist_in_meter = self.parameter["desired_tile_size"] * tiles_per_dim * self.parameter["gsd"]
 
-        self.create_rectangle_kml((west, north), (east, south))
+        # self.create_rectangle_kml((west, north), (east, south))
 
         pos_east = east
         pos_north = north
@@ -216,7 +243,7 @@ class SentinelDownloader:
         url_dict = {}
         url_dict_list = []
 
-        all_boxes_kml = simplekml.Kml()
+        global all_boxes_kml
 
         # from north to south
         while pos_north > south:
@@ -232,7 +259,7 @@ class SentinelDownloader:
                 print(vpos, " ", hpos)
 
                 # check if bbox is in polygon
-                if country_polygon.intersects(box(pos_west, pos_south, pos_east, pos_north)):
+                if roi_polygon.intersects(box(pos_west, pos_south, pos_east, pos_north)):
 
                     # create polygon for kml file
                     pol = all_boxes_kml.newpolygon(name=f"Polygon {vpos} {hpos}")
@@ -244,7 +271,7 @@ class SentinelDownloader:
 
                     # generate url
                     url = ("https://sh.dataspace.copernicus.eu/ogc/wcs/"
-                           f"{parameter['client_id']}?"
+                           f"{self.parameter['client_id']}?"
                            "SERVICE=WCS&"
                            "VERSION=1.0.0&"
                            "REQUEST=GetCoverage&"
@@ -254,9 +281,9 @@ class SentinelDownloader:
                            f"{bbox[1]},"
                            f"{bbox[2]},"
                            f"{bbox[3]}&"
-                           f"MAXCC={parameter['maxcc']}&"
-                           f"PRIORITY={parameter['priority']}&"
-                           f"TIME={parameter['time_start']}/{parameter['time_end']}&"
+                           f"MAXCC={self.parameter['maxcc']}&"
+                           f"PRIORITY={self.parameter['priority']}&"
+                           f"TIME={self.parameter['time_start']}/{self.parameter['time_end']}&"
                            "CRS=EPSG:4326&"
                            "RESPONSE_CRS=EPSG:3857&"
                            f"WIDTH={tile_collection_px_per_dim}&"
@@ -276,9 +303,6 @@ class SentinelDownloader:
             # go dist_in_meter in south direction
             pos_north = pos_south
             vpos += 1
-
-        # save the kml with the boxes
-        all_boxes_kml.save("big_boxes.kml")
 
         return url_dict_list
 
@@ -394,12 +418,41 @@ class SentinelDownloader:
     ds = None
 
 
+def process_geojson(file_path):
+    """Process a GeoJSON file to get polygons and their bounding boxes."""
+    # Load GeoJSON file
+    with open(file_path, 'r') as file:
+        geojson_data = json.load(file)
+
+    # List to hold polygons and their bounding boxes
+    results = []
+
+    # Iterate over features in the GeoJSON
+    for feature in geojson_data['features']:
+        geom = shape(feature['geometry'])
+
+        # Check if the geometry is a Polygon or MultiPolygon
+        if geom.geom_type == 'Polygon' or geom.geom_type == 'MultiPolygon':
+            # Get polygon coordinates and bounding box
+            polygon_coordinates = geom.__geo_interface__['coordinates']
+            bounding_box = geom.bounds
+
+            # Append results
+            results.append({'polygon': polygon_coordinates,
+                            'bounding_box': bounding_box,
+                            'ms_id': feature["properties"]["Name"].split('_')[0]})
+
+    return results
+
+
+
+
 
 if __name__ == "__main__":
 
     settings = {}
     # settings["client_id"] = "15705528-7c35-4373-b499-d1b6b86015a6"  # matthias.kahl@tum.de
-    settings["labels"] = "./LSM_sectors.geojson"
+    settings["labels"] = "./annotations/LSM_sectors.geojson"
     settings["client_id"] = "3c701f12-dc13-482a-b9eb-27d02019b503"  # matthias.kahl@tum.de
     settings["desired_tile_size"] = 256
     settings["max_request_size"] = 2500
@@ -417,32 +470,60 @@ if __name__ == "__main__":
 
     ### DOWNLOAD Mine Sites ROIs ###
 
-    with open("mine_rois.csv", newline="") as csvfile:
+    # training sites
+    geojson_path = "./annotations/train_sites.geojson"
+    mine_train_path = "mines_train"
+    mining_site_polygons = process_geojson(geojson_path)
 
-        # csv reader
-        reader = csv.reader(csvfile)
+    # create kml file for visual check
+    all_boxes_kml = simplekml.Kml()
+    for ms_polygon in mining_site_polygons:
 
-        # go through each line in csv
-        for row in reader:
+        # set the bbox coordinates of the mining site extents
+        # [west, south, east, north]
+        settings["roi_bbox"] = ms_polygon["bounding_box"]
+        settings["labels"] = geojson_path
 
-            # csv reader
-            reader = csv.reader("mine_rois.csv")
+        # instantiate the Downloader
+        myDownloader = SentinelDownloader(settings)
 
-            # read coordinates
-            if row:
-                coordinates = list(float(coord) for coord in row)
+        # download the bbox
+        myDownloader.download_urls(path=mine_train_path)
 
-                # settings["roi_bbox"] = [west, south, east, north]
-                settings["roi_bbox"] = coordinates
-
-                # create an instance of the downloader
-                myDownloader = SentinelDownloader(settings)
-
-                # download all urls
-                myDownloader.download_urls("rois")
+    # Save the KML to a file
+    all_boxes_kml.save("train_bboxes.kml")
+    print("All training files have been downloaded to: " + mine_train_path)
 
 
 
+
+    # test sites
+    geojson_path = "./annotations/test_sites.geojson"
+    mine_test_path = "mines_test"
+    mining_site_polygons = process_geojson(geojson_path)
+
+    # create kml file for visual check
+    all_boxes_kml = simplekml.Kml()
+    for ms_polygon in mining_site_polygons:
+        # set the bbox coordinates of the mining site extents
+        # [west, south, east, north]
+        settings["roi_bbox"] = ms_polygon["bounding_box"]
+        settings["labels"] = geojson_path
+
+        # instantiate the Downloader
+        myDownloader = SentinelDownloader(settings)
+
+        # download the bbox
+        myDownloader.download_urls(path=mine_test_path)
+
+    # Save the KML to a file
+    all_boxes_kml.save("test_bboxes.kml")
+    print("All training files have been downloaded to: " + mine_test_path)
+
+
+
+
+'''
     ### DOWNLOAD WHOLE CHILE ###
 
     # set parameter
@@ -455,3 +536,4 @@ if __name__ == "__main__":
     # download all urls
     myDownloader.download_urls("CHILE")
 
+'''
