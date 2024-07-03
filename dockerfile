@@ -9,8 +9,8 @@ COPY ./requirements.txt /src/mineseg
 
 RUN apt update
 RUN apt install wget -y
-RUN apt install gdal-bin
-RUN apt install rsync
+# RUN apt install gdal-bin
+# RUN apt install rsync
 
 # install miniconda in silent mode
 ENV CONDA_DIR /opt/conda
@@ -34,11 +34,9 @@ SHELL ["conda", "run", "-n", "mineseg", "/bin/bash", "-c"]
 RUN apt update && apt install ffmpeg libsm6 libxext6  -y
 
 # install python packages
+RUN conda install -c conda-forge gdal
 RUN conda install pytorch torchvision pytorch-cuda=11.8 -c pytorch -c nvidia
 RUN pip install -r requirements.txt
-RUN conda install gdal
-RUN conda update gdal
-
 
 
 #########

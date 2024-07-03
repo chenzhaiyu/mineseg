@@ -13,7 +13,7 @@ from torchmetrics import F1Score, Precision, Recall, ConfusionMatrix
 from torchmetrics.classification import MulticlassAccuracy
 import segmentation_models_pytorch as smp
 from torch.nn import DataParallel, CrossEntropyLoss
-from dataset import load_data
+from dataset_aug import load_data
 from utils import matrix_to_string, set_seed, init_device
 
 
@@ -154,37 +154,38 @@ def train(cfg: DictConfig):
         wandb.log({"learning_rate": optimizer.param_groups[0]['lr']})
 
         # show training progress
-        for (images, targets) in pbar_train:
-            images = images.to(device)
-            targets = targets.squeeze().to(device)
+        for aug_img_set in pbar_train:
+            for (images, targets) in aug_img_set:
+                images = images.to(device)
+                targets = targets.squeeze().to(device)
 
-            optimizer.zero_grad()
-            outs = model(images).float()
+                optimizer.zero_grad()
+                outs = model(images).float()
 
-            # compute metrics
-            loss_train = loss(outs, targets)
-            macro_train = metric_macro(outs, targets)
-            micro_train = metric_micro(outs, targets)
-            weighted_train = metric_weighted(outs, targets)
-            f1_train = f1(outs, targets)
-            precision_train = precision(outs, targets)
-            recall_train = recall(outs, targets)
+                # compute metrics
+                loss_train = loss(outs, targets)
+                macro_train = metric_macro(outs, targets)
+                micro_train = metric_micro(outs, targets)
+                weighted_train = metric_weighted(outs, targets)
+                f1_train = f1(outs, targets)
+                precision_train = precision(outs, targets)
+                recall_train = recall(outs, targets)
 
-            # wandb training logging
-            wandb.log({"loss": loss_train})
-            wandb.log({"macro_train": macro_train})
-            wandb.log({"micro_train": micro_train})
-            wandb.log({"weighted_train": weighted_train})
-            wandb.log({"f1_train": f1_train})
-            wandb.log({"precision_train": precision_train})
-            wandb.log({"recall_train": recall_train})
+                # wandb training logging
+                wandb.log({"loss": loss_train})
+                wandb.log({"macro_train": macro_train})
+                wandb.log({"micro_train": micro_train})
+                wandb.log({"weighted_train": weighted_train})
+                wandb.log({"f1_train": f1_train})
+                wandb.log({"precision_train": precision_train})
+                wandb.log({"recall_train": recall_train})
 
-            pbar_train.set_postfix_str(
-                'loss={:.4f}, metric_macro={:.4f}, metric_micro={:.4f}, metric_weighted={:.4f}, f1={:.4f}, precision={:.4f}, '
-                'recall={:.4f}'.format(loss_train, macro_train, micro_train, weighted_train, f1_train, precision_train, recall_train))
+                pbar_train.set_postfix_str(
+                    'loss={:.4f}, metric_macro={:.4f}, metric_micro={:.4f}, metric_weighted={:.4f}, f1={:.4f}, precision={:.4f}, '
+                    'recall={:.4f}'.format(loss_train, macro_train, micro_train, weighted_train, f1_train, precision_train, recall_train))
 
-            loss_train.backward()
-            optimizer.step()
+                loss_train.backward()
+                optimizer.step()
 
 
         f1_valid, precision_valid, recall_valid, confusion_valid, macro_valid, micro_valid, weighted_valid = 0, 0, 0, 0, 0, 0, 0
@@ -193,34 +194,35 @@ def train(cfg: DictConfig):
         # VALIDATION DATASET
         # show validation progress
         pbar_valid = tqdm(valid_dataloader, desc=f'epoch {i}')
-        for (images, targets) in pbar_valid:
-            images = images.to(device)
-            targets = targets.squeeze().to(device)
+        for aug_img_set in pbar_valid:
+            for (images, targets) in aug_img_set:
+                images = images.to(device)
+                targets = targets.squeeze().to(device)
 
-            optimizer.zero_grad()
-            outs = model(images)
-            
-            # compute metrics
-            loss_valid = loss(outs, targets)
-            macro_valid += metric_macro(outs, targets)
-            micro_valid += metric_micro(outs, targets)
-            weighted_valid += metric_weighted(outs, targets)
-            f1_valid += f1(outs, targets)
-            precision_valid += precision(outs, targets)
-            recall_valid += recall(outs, targets)
-            confusion_valid += confusion_matrix(outs, targets)
+                optimizer.zero_grad()
+                outs = model(images)
+                
+                # compute metrics
+                loss_valid = loss(outs, targets)
+                macro_valid += metric_macro(outs, targets)
+                micro_valid += metric_micro(outs, targets)
+                weighted_valid += metric_weighted(outs, targets)
+                f1_valid += f1(outs, targets)
+                precision_valid += precision(outs, targets)
+                recall_valid += recall(outs, targets)
+                confusion_valid += confusion_matrix(outs, targets)
 
-            scheduler.step()
-            # scheduler.step(loss_valid)  # for ReduceLROnPlateau Scheduler
+                scheduler.step()
+                # scheduler.step(loss_valid)  # for ReduceLROnPlateau Scheduler
 
         # calculate the average
-        loss_valid /= len(pbar_valid)
-        macro_valid /= len(pbar_valid)
-        micro_valid /= len(pbar_valid)
-        weighted_valid /= len(pbar_valid)
-        f1_valid /= len(pbar_valid)
-        precision_valid /= len(pbar_valid)
-        recall_valid /= len(pbar_valid)
+        loss_valid /= len(pbar_valid) * 6
+        macro_valid /= len(pbar_valid) * 6
+        micro_valid /= len(pbar_valid) * 6
+        weighted_valid /= len(pbar_valid) * 6
+        f1_valid /= len(pbar_valid) * 6
+        precision_valid /= len(pbar_valid) * 6
+        recall_valid /= len(pbar_valid) * 6
         
 
         # console evaluation logging
@@ -245,26 +247,28 @@ def train(cfg: DictConfig):
         model.eval()
         pbar_test = tqdm(test_dataloader)
         f1_test, precision_test, recall_test, confusion_test, macro_test, micro_test, weighted_test = 0, 0, 0, 0, 0, 0, 0
-        for (images, targets) in pbar_test:
-            with torch.no_grad():
-                images = images.to(device)
-                targets = targets.squeeze().to(device)
-                outs = model(images)
+    
+        for aug_img_set in pbar_test:
+            for (images, targets) in aug_img_set:
+                with torch.no_grad():
+                    images = images.to(device)
+                    targets = targets.squeeze().to(device)
+                    outs = model(images)
 
-                macro_test += metric_macro(outs, targets)
-                micro_test += metric_micro(outs, targets)
-                weighted_test += metric_weighted(outs, targets)
-                f1_test += f1(outs, targets)
-                precision_test += precision(outs, targets)
-                recall_test += recall(outs, targets)
-                confusion_test += confusion_matrix(outs, targets)
+                    macro_test += metric_macro(outs, targets)
+                    micro_test += metric_micro(outs, targets)
+                    weighted_test += metric_weighted(outs, targets)
+                    f1_test += f1(outs, targets)
+                    precision_test += precision(outs, targets)
+                    recall_test += recall(outs, targets)
+                    confusion_test += confusion_matrix(outs, targets)
 
-        f1_test /= len(pbar_test)
-        precision_test /= len(pbar_test)
-        recall_test /= len(pbar_test)
-        macro_test /= len(pbar_test)
-        micro_test /= len(pbar_test)
-        weighted_test /= len(pbar_test)
+        f1_test /= len(pbar_test) * 6
+        precision_test /= len(pbar_test) * 6
+        recall_test /= len(pbar_test) * 6
+        macro_test /= len(pbar_test) * 6
+        micro_test /= len(pbar_test) * 6
+        weighted_test /= len(pbar_test) * 6
 
         # console evaluation logging
         print("\nperformance on TEST Set:")
