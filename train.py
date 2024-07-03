@@ -95,11 +95,11 @@ def train(cfg: DictConfig):
     # https://github.com/pytorch/pytorch/issues/90414 & https://github.com/pytorch/pytorch/pull/91400
 
     
-    # scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=cfg.scheduler.base_lr, max_lr=cfg.scheduler.max_lr,
-                                                  # step_size_up=cfg.scheduler.step_size_up, mode=cfg.scheduler.mode,
-                                                  # cycle_momentum=False)
+    scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=cfg.scheduler.base_lr, max_lr=cfg.scheduler.max_lr,
+                                                  step_size_up=cfg.scheduler.step_size_up, mode=cfg.scheduler.mode,
+                                                  cycle_momentum=False)
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
 
     # define metrics
     metric_macro = MulticlassAccuracy(num_classes=len(cfg.classes), average="macro").to(device)
@@ -210,8 +210,8 @@ def train(cfg: DictConfig):
             recall_valid += recall(outs, targets)
             confusion_valid += confusion_matrix(outs, targets)
 
-            # scheduler.step()
-            scheduler.step(loss_valid)  # for ReduceLROnPlateau Scheduler
+            scheduler.step()
+            # scheduler.step(loss_valid)  # for ReduceLROnPlateau Scheduler
 
         # calculate the average
         loss_valid /= len(pbar_valid)
@@ -224,7 +224,7 @@ def train(cfg: DictConfig):
         
 
         # console evaluation logging
-        print("performance on VALIDATION Set:")
+        print("\nperformance on VALIDATION Set:")
         logger.info(
             'metric_macro={:.4f}, metric_micro={:.4f}, metric_weighted={:.4f}, f1={:.4f}, precision={:.4f}, '
             'recall={:.4f}'.format(macro_valid, micro_valid, weighted_valid, f1_valid, precision_valid, recall_valid))
@@ -267,9 +267,9 @@ def train(cfg: DictConfig):
         weighted_test /= len(pbar_test)
 
         # console evaluation logging
-        print("performance on TEST Set:")
+        print("\nperformance on TEST Set:")
         logger.info(
-            '\nTEST: metric_macro={:.2f}, metric_micro={:.2f}, metric_weighted={:.2f}, f1={:.2f}, precision={:.2f}, '
+            'TEST: metric_macro={:.2f}, metric_micro={:.2f}, metric_weighted={:.2f}, f1={:.2f}, precision={:.2f}, '
             'recall={:.2f}'.format(macro_test, micro_test, weighted_test, f1_test, precision_test, recall_test))
         logger.info(f'Confusion matrix TEST: \n{matrix_to_string(confusion_test)}')
 
