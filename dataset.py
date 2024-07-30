@@ -1,5 +1,5 @@
 import os
-import pdb
+
 import cv2
 import torch
 from torch.utils.data import DataLoader, Dataset
@@ -24,6 +24,7 @@ class MiningSectorDataset(Dataset):
         # read data
         try:
             image = cv2.imread(image_path)
+
             image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB) # the geotiff are already RGB
             mask = cv2.imread(mask_path, 0)
         except Exception as e:
@@ -57,7 +58,6 @@ class MiningSectorDataset(Dataset):
             for old_value, new_value in self.remapping.items():
                 remapped_mask[mask == int(old_value)] = new_value
             mask = remapped_mask
-            
         return image, mask
 
 

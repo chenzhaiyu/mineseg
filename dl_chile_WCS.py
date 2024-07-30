@@ -90,8 +90,11 @@ class SentinelDownloader:
             self.split_geotiff(f_name, os.path.join(path, "patches"), dim_size)
 
             # split the mask files into desired tiles
-            print("    Split mask ", f_name_mask)
-            self.split_geotiff(f_name_mask, os.path.join(path, "masks", "patches"), dim_size)
+            try:
+                print("    Split mask ", f_name_mask)
+                self.split_geotiff(f_name_mask, os.path.join(path, "masks", "patches"), dim_size)
+            except:
+                print("error in creating mask")
 
 
 
@@ -262,12 +265,12 @@ class SentinelDownloader:
                 if roi_polygon.intersects(box(pos_west, pos_south, pos_east, pos_north)):
 
                     # create polygon for kml file
-                    pol = all_boxes_kml.newpolygon(name=f"Polygon {vpos} {hpos}")
+                    '''pol = all_boxes_kml.newpolygon(name=f"Polygon {vpos} {hpos}")
                     bbox_poly = box(pos_west, pos_south, pos_east, pos_north)
                     pol.outerboundaryis = list(bbox_poly.exterior.coords)
                     pol.linestyle.width = 1
                     pol.linestyle.color = "ff0000ff"
-                    pol.polystyle.color = '00000000'
+                    pol.polystyle.color = '00000000' '''
 
                     # generate url
                     url = ("https://sh.dataspace.copernicus.eu/ogc/wcs/"
@@ -453,7 +456,9 @@ if __name__ == "__main__":
     settings = {}
     # settings["client_id"] = "15705528-7c35-4373-b499-d1b6b86015a6"  # matthias.kahl@tum.de
     settings["labels"] = "./annotations/LSM_sectors.geojson"
-    settings["client_id"] = "3c701f12-dc13-482a-b9eb-27d02019b503"  # matthias.kahl@tum.de
+    settings["client_id"] = "3c701f12-dc13-482a-b9eb-27d02019b503"  # matthias.kahl@tum.de (WCS L1C)
+
+
     settings["desired_tile_size"] = 256
     settings["max_request_size"] = 2500
     settings["gsd"] = 10
@@ -466,6 +471,20 @@ if __name__ == "__main__":
     settings["time_start"] = "2021-01-01"
     settings["time_end"] = "2022-12-31"
 
+
+    # temporary for michael
+    # settings["client_id"] = "84ff1903-27a1-4767-8d02-e77ab3b3cf42"  # matthias.kahl@tum.de (WCS L2A)
+    settings["maxcc"] = "100"
+    settings["roi_bbox"] = [7.79, 46.41, 7.85, 46.44]
+    settings["time_start"] = "2023-12-27"
+    settings["time_end"] = "2023-12-27"
+    settings["layers"] = "TRUE_COLOR"
+
+    # instantiate the Downloader
+    myDownloader = SentinelDownloader(settings)
+
+    # download the bbox
+    myDownloader.download_urls(path="./")
 
 
     ### DOWNLOAD Mine Sites ROIs ###

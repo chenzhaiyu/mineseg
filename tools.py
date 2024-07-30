@@ -20,7 +20,7 @@ from PIL import Image
 import os
 import re
 from collections import defaultdict
-
+import glob
 
 
 
@@ -126,7 +126,26 @@ def get_concat_v_multi(images):
 # stack_images(directory)
 
 
+def create_vrt_of_files_in_folder(folder_path, vrt_path="./out.vrt"):
 
+    # Find all the files in the directory with common raster extensions
+    extensions = ['*.tif', '*.jpg', '*.png']  # Add more extensions as needed
+    raster_files = []
+
+    for ext in extensions:
+        raster_files.extend(glob.glob(os.path.join(folder_path, ext)))
+
+    # Ensure there are raster files to process
+    if not raster_files:
+        print("No raster files found in the specified directory.")
+        exit(1)
+
+    raster_files = raster_files[1:100]
+
+    # Build the VRT file
+    gdal.BuildVRT(vrt_path, raster_files)
+
+    print(f"VRT file created: {vrt_path}")
 
 
 def process_image(img_path):
@@ -484,7 +503,7 @@ def is_point_in_bbox(bbox_small, bbox_big):
 
 
 def download_via_stac(start_url):
-    import requests
+    '''import requests
 
     url = f"https://zipper.dataspace.copernicus.eu/odata/v1/Products(a5ab498a-7b2f-4043-ae2a-f95f457e7b3b)/$value"
 
@@ -497,6 +516,13 @@ def download_via_stac(start_url):
     with open("product.zip", "wb") as file:
         for chunk in response.iter_content(chunk_size=8192):
             if chunk:
-                file.write(chunk)
+                file.write(chunk)'''
 
     pass
+
+
+# run something
+if __name__ == '__main__':
+    print("ran into tools.py")
+
+    create_vrt_of_files_in_folder("/media/ai4eo4_sshfs/src/mineseg/outputs/unet")
