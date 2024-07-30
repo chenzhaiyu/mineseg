@@ -7,16 +7,26 @@ defaults:
 # paths
 run_suffix: ''
 data_root: '.'
-checkpoint_dir: './checkpoints/${model}${run_suffix}'
-checkpoint_path: '${checkpoint_dir}/checkpoint_49.pth'
-train_image_dir: '${data_root}/patches_img_trainset'
-train_mask_dir: '${data_root}/patches_mask_trainset'
-test_image_dir: '${data_root}/patches_img_testset'
-test_mask_dir: '${data_root}/patches_mask_testset'
-valid_image_dir: '${data_root}/patches_img_validset'
-valid_mask_dir: '${data_root}/patches_mask_validset'
 
+checkpoint_dir: './checkpoints/${model}${run_suffix}'
+checkpoint_path: '${checkpoint_dir}/checkpoint_99.pth'
+
+# training files
+train_image_dir: '${data_root}/mines_train/patches'
+train_mask_dir: '${data_root}/mines_train/masks/patches'
+
+# test files
+test_image_dir: '${data_root}/mines_test/patches'
+test_mask_dir: '${data_root}/mines_test/masks/patches'
+
+# validation files
+valid_image_dir: '${data_root}/mines_train/patches'
+valid_mask_dir: '${data_root}/mines_train/masks/patches'
+
+# to-predict-files
 pred_dir: '${data_root}/CHILE/patches'
+
+# output folder
 result_dir: './outputs/${model}${run_suffix}'
 # result_dir: './outputs/chile_pred/'
 
@@ -33,16 +43,16 @@ activation: null                  # null for logits (softmax to be computed in l
 
 # training & testing
 use_cuda: true
-warm: false                       # warm start from checkpoint
+warm: true                       # warm start from checkpoint
 warm_optimizer: true              # load optimizer from checkpoint if available
 warm_scheduler: true              # load scheduler from checkpoint if available
 freeze_encoder: false
-gpu_ids: [0]
-num_epochs: 50
+gpu_ids: [8]
+num_epochs: 100
 weight_decay: 0.00001
-batch_size: 32
-num_workers: 32
-num_examples: 1000
+batch_size: 8
+num_workers: 16
+num_examples: 1000000
 seed: 1117
 loss: ce                          # ce, dice, focal
 lr: 1e-3

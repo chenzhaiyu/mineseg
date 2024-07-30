@@ -52,7 +52,7 @@ def predict(cfg: DictConfig):
     model.to(device)
 
     # load example image paths
-    filenames = os.listdir(cfg.test_image_dir)[:cfg.num_examples]
+    filenames = os.listdir(cfg.pred_dir)[:cfg.num_examples]
 
     # load checkpoint
     state = torch.load(cfg.checkpoint_path)
@@ -66,7 +66,7 @@ def predict(cfg: DictConfig):
     for filename in tqdm(filenames):
 
         # load image
-        image_path = os.path.join(cfg.test_image_dir, filename)
+        image_path = os.path.join(cfg.pred_dir, filename)
         # image_cv2 = cv2.imread(image_path)
         # image_cv2 = cv2.cvtColor(image_cv2, cv2.COLOR_BGR2RGB)
         # image_cv2 = image_cv2.astype("float32")
