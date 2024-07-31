@@ -47,7 +47,6 @@ class MiningSectorDataset(Dataset):
         # image = cv2.copyMakeBorder(image, top, bottom, left, right, cv2.BORDER_CONSTANT, value=[0,0,0])
         # mask = cv2.copyMakeBorder(mask, top, bottom, left, right, cv2.BORDER_CONSTANT, value=[0,0,0])
 
-
         # convert data
         image = torch.from_numpy(image.transpose(2, 0, 1).astype('float32'))
         mask = torch.from_numpy(mask.astype('int64')).unsqueeze(0)

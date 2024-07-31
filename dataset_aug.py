@@ -13,12 +13,11 @@ class MiningSectorDataset(Dataset):
         self.remapping = remapping
         
         self.transform = transforms.Compose([
-            transforms.RandomApply([transforms.GaussianBlur(kernel_size=3)], p=0.5),
-            transforms.RandomApply([transforms.RandomAdjustSharpness(sharpness_factor=2)], p=0.5),
-            transforms.RandomApply([transforms.RandomAdjustSharpness(sharpness_factor=0.5)], p=0.5),
             transforms.RandomRotation(degrees=(90, 90)),
             transforms.RandomRotation(degrees=(180, 180)),
             transforms.RandomRotation(degrees=(270, 270)),
+            transforms.RandomVerticalFlip(),
+            transforms.RandomHorizontalFlip()
         ])
     
     def __len__(self):
@@ -72,7 +71,7 @@ class MiningSectorDataset(Dataset):
         for transform in self.transform.transforms:
             augmented_image = transform(image)
             augmented_mask = transform(mask)
-            augmented_images.append((augmented_image, mask))
+            augmented_images.append((augmented_image, augmented_mask))
 
         return augmented_images
 

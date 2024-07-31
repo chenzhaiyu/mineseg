@@ -55,7 +55,7 @@ def predict(cfg: DictConfig):
     filenames = os.listdir(cfg.pred_image_dir)[:cfg.num_examples]
 
     # load checkpoint
-    state = torch.load(cfg.checkpoint_path)
+    state = torch.load(cfg.checkpoint_path, map_location=device)
     model.load_state_dict(state['state_dict'])
 
     # start evaluation

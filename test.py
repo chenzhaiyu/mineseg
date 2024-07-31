@@ -61,8 +61,9 @@ def test(cfg: DictConfig):
     model.to(device)
 
     # load checkpoint
-    state = torch.load(cfg.checkpoint_path)
+    state = torch.load(cfg.checkpoint_path, map_location=device)
     model.load_state_dict(state['state_dict'])
+
 
     # define metrics
     mca_a = MulticlassAccuracy(num_classes=len(cfg.classes), average="macro").to(device)
