@@ -77,7 +77,7 @@ def train(cfg: DictConfig):
     model.to(device)
 
     # Class weighting for imbalance handling
-    class_weights = torch.FloatTensor([1,20]).cuda()
+    # class_weights = torch.FloatTensor([1, 20]).cuda()
 
     # define loss
     if cfg.loss == 'dice':

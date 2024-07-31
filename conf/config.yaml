@@ -15,16 +15,17 @@ checkpoint_path: '${checkpoint_dir}/checkpoint_99.pth'
 train_image_dir: '${data_root}/mines_train/patches'
 train_mask_dir: '${data_root}/mines_train/masks/patches'
 
-# test files
-test_image_dir: '${data_root}/mines_test/patches'
-test_mask_dir: '${data_root}/mines_test/masks/patches'
-
 # validation files
 valid_image_dir: '${data_root}/mines_train/patches'
 valid_mask_dir: '${data_root}/mines_train/masks/patches'
 
+# test files
+test_image_dir: '${data_root}/mines_test/patches'
+test_mask_dir: '${data_root}/mines_test/masks/patches'
+
 # to-predict-files
-pred_dir: '${data_root}/CHILE/patches'
+pred_image_dir: '${data_root}/CHILE/patches'
+pred_mask_dir: ''
 
 # output folder
 result_dir: './outputs/${model}${run_suffix}'
