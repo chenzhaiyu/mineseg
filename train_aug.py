@@ -13,7 +13,7 @@ from torchmetrics import F1Score, Precision, Recall, ConfusionMatrix
 from torchmetrics.classification import MulticlassAccuracy
 import segmentation_models_pytorch as smp
 from torch.nn import DataParallel, CrossEntropyLoss
-from dataset import load_data
+from dataset_aug import load_data
 from utils import matrix_to_string, set_seed, init_device
 
 
@@ -77,7 +77,7 @@ def train(cfg: DictConfig):
     model.to(device)
 
     # Class weighting for imbalance handling
-    class_weights = torch.FloatTensor([1,20]).cuda()
+    # class_weights = torch.FloatTensor([1,20]).cuda()
 
     # define loss
     if cfg.loss == 'dice':
@@ -112,7 +112,7 @@ def train(cfg: DictConfig):
 
     # warm start from checkpoint if applicable
     if cfg.warm:
-        state = torch.load(cfg.checkpoint_path)
+        state = torch.load(cfg.checkpoint_path, map_location=device)
         model.load_state_dict(state['state_dict'])
         if state['epoch'] > cfg.num_epochs:
             logger.info(f'Expected epoch reached from checkpoint')
@@ -243,7 +243,7 @@ def train(cfg: DictConfig):
 
         # TEST DATASET
         # evaluation epoch
-        torch.cuda.empty_cache()
+        # torch.cuda.empty_cache()
         model.eval()
         pbar_test = tqdm(test_dataloader)
         f1_test, precision_test, recall_test, confusion_test, macro_test, micro_test, weighted_test = 0, 0, 0, 0, 0, 0, 0
