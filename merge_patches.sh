@@ -11,13 +11,13 @@ mkdir $output_dir
 declare -A base_filenames
 
 # Count the total number of files
-total_files=$(find "${input_dir}" -type f -name '_Chile_*_mask.tif' | wc -l)
+total_files=$(find "${input_dir}" -type f -name 'Chile_*_mask.tif' | wc -l)
 processed_files=0
 
 echo "Extracting unique base filenames..."
 
 # Loop over all the files with the specific pattern in the input directory
-for file in "${input_dir}"_Chile_*_mask.tif; do
+for file in "${input_dir}"Chile_*_mask.tif; do
   # Extract the base filename by removing the patch indices and suffix
   base=$(basename "$file" | sed 's/_[0-9]\+_[0-9]\+_mask\.tif$//')
   
