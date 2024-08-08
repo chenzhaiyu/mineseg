@@ -1,7 +1,14 @@
 #!/bin/bash
 
+# This file goes through all geotiff (*.tif) files in a given folder
+# and extracts the extents of these files and collects them in a *.geojson file
+# call: create_footprints.sh path/to/geotiffs path/to/footprints.geojson
+# # # #
+
+
 # Set the source directory containing the TIFF files
 src_dir=$1
+
 # Set the destination directory for the shapefiles
 dst_file=$2
 
@@ -18,4 +25,5 @@ for tif_file in "$src_dir"/*.tif; do
   gdal_footprint "$tif_file" "$dst_file"
   
   echo "Created footprint for $tif_file at $dst_file"
+
 done

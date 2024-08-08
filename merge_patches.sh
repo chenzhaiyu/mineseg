@@ -1,8 +1,14 @@
 #!/bin/bash
 
-# Set the directory containing the files
-input_dir="./outputs/unet/"
-output_dir="./outputs/unet_merged/"
+# This file is intent to merge patches created by gdal_retile of the pattern
+# *_00_00.tif
+# call: merge_patches.sh path/to/patches path/to/output.file
+# # # #
+
+
+# Set the directory containing the patches
+input_dir="$1"
+output_dir="$2"
 
 # create output folder
 mkdir $output_dir
@@ -18,6 +24,7 @@ echo "Extracting unique base filenames..."
 
 # Loop over all the files with the specific pattern in the input directory
 for file in "${input_dir}"Chile_*_mask.tif; do
+
   # Extract the base filename by removing the patch indices and suffix
   base=$(basename "$file" | sed 's/_[0-9]\+_[0-9]\+_mask\.tif$//')
   
@@ -27,6 +34,7 @@ for file in "${input_dir}"Chile_*_mask.tif; do
   # Update progress
   processed_files=$((processed_files + 1))
   echo -ne "Progress: $((processed_files * 100 / total_files))%\r"
+
 done
 
 echo -ne "Extracting unique base filenames completed!\n"
@@ -39,6 +47,7 @@ echo "Merging tiles..."
 
 # Loop through each unique base filename and merge the tiles
 for base in "${!base_filenames[@]}"; do
+
   # Construct the output filename
   output="${output_dir}${base}_combined_mask.tif"
   
@@ -52,6 +61,7 @@ for base in "${!base_filenames[@]}"; do
   # Update progress
   processed_bases=$((processed_bases + 1))
   echo -ne "Progress: $((processed_bases * 100 / total_bases))%\r"
+
 done
 
 echo -ne "Merging tiles completed!\n"

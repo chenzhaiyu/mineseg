@@ -77,7 +77,7 @@ def train(cfg: DictConfig):
     model.to(device)
 
     # Class weighting for imbalance handling
-    # class_weights = torch.FloatTensor([1, 20]).cuda()
+    class_weights = torch.FloatTensor([1, 20]).to(device)
 
     # define loss
     if cfg.loss == 'dice':
@@ -85,8 +85,8 @@ def train(cfg: DictConfig):
     elif cfg.loss == 'focal':
         loss = smp.losses.FocalLoss(mode='multiclass')
     elif cfg.loss == 'ce':
-        # loss = CrossEntropyLoss(weight=class_weights)
-        loss = CrossEntropyLoss()
+        loss = CrossEntropyLoss(weight=class_weights)
+        # loss = CrossEntropyLoss()
     else:
         raise ValueError(f'Unexpected loss: {cfg.loss}')
 
@@ -95,11 +95,11 @@ def train(cfg: DictConfig):
     # https://github.com/pytorch/pytorch/issues/90414 & https://github.com/pytorch/pytorch/pull/91400
 
     
-    scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=cfg.scheduler.base_lr, max_lr=cfg.scheduler.max_lr,
-                                                  step_size_up=cfg.scheduler.step_size_up, mode=cfg.scheduler.mode,
-                                                  cycle_momentum=False)
+    # scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=cfg.scheduler.base_lr, max_lr=cfg.scheduler.max_lr,
+                                                  # step_size_up=cfg.scheduler.step_size_up, mode=cfg.scheduler.mode,
+                                                  # cycle_momentum=False)
 
-    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
 
     # define metrics
     metric_macro = MulticlassAccuracy(num_classes=len(cfg.classes), average="macro").to(device)
@@ -210,8 +210,8 @@ def train(cfg: DictConfig):
             recall_valid += recall(outs, targets)
             confusion_valid += confusion_matrix(outs, targets)
 
-            scheduler.step()
-            # scheduler.step(loss_valid)  # for ReduceLROnPlateau Scheduler
+            # scheduler.step()
+            scheduler.step(loss_valid)  # for ReduceLROnPlateau Scheduler
 
         # calculate the average
         loss_valid /= len(pbar_valid)
