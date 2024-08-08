@@ -125,11 +125,12 @@ def predict(cfg: DictConfig):
                 # cv2.imwrite(os.path.join(cfg.result_dir, "_" + filename[:-4] + "_mask.png"), pred_mask)
 
                 # save the geotiff meta data to mask file
-                with rasterio.open(os.path.join(cfg.result_dir, "_" + filename[:-4] + "_mask.tif"), "w", **meta) as dst:
+                with rasterio.open(os.path.join(cfg.result_dir, filename[:-4] + "_mask.tif"), "w", **meta) as dst:
                     dst.write(np.expand_dims(pred_mask, axis=0))
 
                 # prepare plot for visual comparison
-                prepare_plot(os.path.join(cfg.result_dir, "_" + filename[:-4] + ".png"), origin, None, pred_mask, cfg.classes)
+                prepare_plot(os.path.join(cfg.result_dir, filename[:-4] + ".png"), origin, None, pred_mask,
+                             cfg.classes)
 
             else:
                 # write the prediction mask as png image

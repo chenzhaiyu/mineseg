@@ -9,7 +9,7 @@ run_suffix: ''
 data_root: '.'
 
 checkpoint_dir: './checkpoints/${model}${run_suffix}'
-checkpoint_path: '${checkpoint_dir}/checkpoint_99.pth'
+checkpoint_path: '${checkpoint_dir}/checkpoint_best.pth'
 
 # training files
 train_image_dir: '${data_root}/mines_train/patches'
@@ -23,9 +23,13 @@ valid_mask_dir: '${data_root}/mines_train/masks/patches'
 test_image_dir: '${data_root}/mines_test/patches'
 test_mask_dir: '${data_root}/mines_test/masks/patches'
 
+# pred files
+pred_image_dir: '${data_root}/mines_test/patches'
+pred_mask_dir: '${data_root}/mines_test/masks/patches'
+
 # to-predict-files
-pred_image_dir: '${data_root}/CHILE/patches'
-pred_mask_dir: ''
+# pred_image_dir: '${data_root}/CHILE/patches'
+# pred_mask_dir: ''
 
 # output folder
 result_dir: './outputs/${model}${run_suffix}'
@@ -44,14 +48,14 @@ activation: null                  # null for logits (softmax to be computed in l
 
 # training & testing
 use_cuda: true
-warm: true                       # warm start from checkpoint
-warm_optimizer: true              # load optimizer from checkpoint if available
-warm_scheduler: true              # load scheduler from checkpoint if available
+warm: false                       # warm start from checkpoint
+warm_optimizer: false              # load optimizer from checkpoint if available
+warm_scheduler: false              # load scheduler from checkpoint if available
 freeze_encoder: false
-gpu_ids: [8]
+gpu_ids: [6]
 num_epochs: 100
 weight_decay: 0.00001
-batch_size: 8
+batch_size: 64
 num_workers: 16
 num_examples: 1000000
 seed: 1117
