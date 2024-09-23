@@ -57,6 +57,8 @@ for base in "${!base_filenames[@]}"; do
   # create cloud-optimized tif files
   gdal_merge.py -o $output ${input_dir}${base}_*.tif -co TILED=YES -co COMPRESS=LZW -co COPY_SRC_OVERVIEWS=YES
 
+  # create and append to raster-footprint geojson
+  gdal_footprint "$output" "merged_raster_footprints.geojson"
   
   # Update progress
   processed_bases=$((processed_bases + 1))
