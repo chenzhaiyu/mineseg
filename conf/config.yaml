@@ -16,8 +16,8 @@ train_image_dir: '${data_root}/mines_train/patches'
 train_mask_dir: '${data_root}/mines_train/masks/patches'
 
 # validation files
-valid_image_dir: '${data_root}/mines_train/patches'
-valid_mask_dir: '${data_root}/mines_train/masks/patches'
+valid_image_dir: '${data_root}/mines_valid/patches'
+valid_mask_dir: '${data_root}/mines_valid/masks/patches'
 
 # test files
 test_image_dir: '${data_root}/mines_test/patches'
@@ -36,6 +36,7 @@ result_dir: './outputs/${model}${run_suffix}'
 # result_dir: './outputs/chile_pred/'
 
 # architecture
+class_weights: [1, 1]
 in_channel: 3
 model: 'unet'
 encoder: 'resnet50'               # https://smp.readthedocs.io/en/latest/encoders.html
@@ -52,7 +53,7 @@ warm: false                       # warm start from checkpoint
 warm_optimizer: false              # load optimizer from checkpoint if available
 warm_scheduler: false              # load scheduler from checkpoint if available
 freeze_encoder: false
-gpu_ids: [6]
+gpu_ids: [4]
 num_epochs: 100
 weight_decay: 0.00001
 batch_size: 64
