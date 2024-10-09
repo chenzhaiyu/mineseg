@@ -30,6 +30,54 @@ pip install -r requirements.txt
 apt-get update && apt-get install libgl1
 ```
 
+
+## Folder Structure
+	.
+	├── annotations
+	│   ├── annotation_doc.pdf                           # documentation of annotation classes and naming conventions
+	│   ├── ASM_Ghana.geojson                            # Artisanal Mining Site Annotations
+	│   ├── chile_all_sites_from_maus_et_al.geojson      # All Chilean Mining Sites according to Maus et al
+	│   ├── LSM_Chile_sectors.geojson                    # Large Scale Mining Site Annotations
+	│   ├── metadata.csv                                 # Large Scale Mining Site Metadata
+	│   ├── metadata-sources.txt                         # Large Scale Mining Site Metadata Sources
+	│   ├── metadata.xlsx                                # Large Scale Mining Site Metadata
+	│   ├── show-LSM.qgz                                 # QGIS Project file (only visualization)
+	│   ├── test_sites.geojson                           # Large Scale Mining Sites that are used for the Test Set
+	│   └── train_sites.geojson                          # Large Scale Mining Sites that are used for the Training Set
+	├── checkpoints                                      # Training Checkpoints
+	├── conf                                             # hydra configuration
+	│   ├── config.yaml                                  # hydra configuration file (learn-rate, batch-size, paths, epochs, etc.)
+	│   └── hydra
+	│       └── job_logging
+	│           └── custom.yaml
+	├── create_footprints.sh                             # creates a geojson with the footprints of all geotiffs in the given folder
+	├── dataset_aug.py                                   # alternative data loader including some baseline augmentation
+	├── dataset.py                                       # default data loader
+	├── dl_chile_WCS.py                                  # download Sentinel Imagery of training, test, and CHILE set via WCS
+	├── dockerfile                                       # dockerfile for creation of running environment
+	├── merge_patches.sh                                 # merging of (predicted mask) patches into large tiles and a virtual raster tile
+	├── outputs                                          # outpuf folder of prediction masks and ground truth comparison plot
+	│   └── unet_merged                                  # classifier subfolder
+	│       ├── _Chile_0_179_combined_mask.tif           # mask files
+	│       ├── Chile_0_179_combined_mask.tif
+	│       ├── ...
+	│       ├── _Chile_9_9_combined_mask.tif
+	│       └── Chile_9_9_combined_mask.tif
+	├── output.vrt                                       # Virtual Raster Tile output of merge_patches.sh
+	├── predict.py                                       # running prediction of files in prediction path defined in hydra configuration file
+	├── raster_footprint.dbf                                       
+	├── raster_footprint.geojson                         # footprints of all chilean raster tiles
+	├── README.md                                        # readme
+	├── requirements.txt                                 # python requirements
+	├── select_10000_random_patches.sh                   # random selection of patches for retrieving background samples
+	├── siteID_distances.csv                             # min-Distance of each Site to the closest located site
+	├── test.py                                          # running prediction and evaluation of test-set with best-performing model
+	├── tools.py                                         # helper functions
+	├── train.py                                         # run training       
+	└── utils.py                                         # helper functions
+
+
+
 ## Data download and preparation
 The data set contains the extents of the mining sites as sentinel-2 images and their corresponding mask files. However, if you desire to reproduce the download process or to add images of different dates, you could do it as follows. You will need an environment with gdal installed. We suggest using a conda environment and install gdal with:
 

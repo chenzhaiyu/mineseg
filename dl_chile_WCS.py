@@ -487,6 +487,8 @@ if __name__ == "__main__":
     myDownloader.download_urls(path="./")
 
 
+    
+
     ### DOWNLOAD Mine Sites ROIs ###
 
     # training sites
@@ -542,7 +544,6 @@ if __name__ == "__main__":
 
 
 
-'''
     ### DOWNLOAD WHOLE CHILE ###
 
     # set parameter
@@ -554,5 +555,3 @@ if __name__ == "__main__":
 
     # download all urls
     myDownloader.download_urls("CHILE")
-
-'''
