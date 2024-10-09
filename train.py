@@ -77,7 +77,8 @@ def train(cfg: DictConfig):
     model.to(device)
 
     # Class weighting for imbalance handling
-    class_weights = torch.FloatTensor([1, 20]).to(device)
+    print("class_weights: ", cfg.class_weights)
+    class_weights = torch.FloatTensor(cfg.class_weights).to(device)
 
     # define loss
     if cfg.loss == 'dice':
@@ -90,16 +91,17 @@ def train(cfg: DictConfig):
     else:
         raise ValueError(f'Unexpected loss: {cfg.loss}')
 
+
     # define optimizer and scheduler
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg.lr, weight_decay=cfg.weight_decay)
     # https://github.com/pytorch/pytorch/issues/90414 & https://github.com/pytorch/pytorch/pull/91400
-
     
-    # scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=cfg.scheduler.base_lr, max_lr=cfg.scheduler.max_lr,
-                                                  # step_size_up=cfg.scheduler.step_size_up, mode=cfg.scheduler.mode,
-                                                  # cycle_momentum=False)
+    # learn rate scheduler (default)
+    scheduler = torch.optim.lr_scheduler.CyclicLR(optimizer, base_lr=cfg.scheduler.base_lr, max_lr=cfg.scheduler.max_lr, step_size_up=cfg.scheduler.step_size_up, mode=cfg.scheduler.mode, cycle_momentum=False)
 
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
+    # not working well
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
+
 
     # define metrics
     metric_macro = MulticlassAccuracy(num_classes=len(cfg.classes), average="macro").to(device)
@@ -210,8 +212,8 @@ def train(cfg: DictConfig):
             recall_valid += recall(outs, targets)
             confusion_valid += confusion_matrix(outs, targets)
 
-            # scheduler.step()
-            scheduler.step(loss_valid)  # for ReduceLROnPlateau Scheduler
+            scheduler.step()
+            # scheduler.step(loss_valid)  # for ReduceLROnPlateau Scheduler
 
         # calculate the average
         loss_valid /= len(pbar_valid)
