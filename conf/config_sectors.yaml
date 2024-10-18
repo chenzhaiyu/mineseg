@@ -1,0 +1,58 @@
+# default settings
+defaults:
+  - _self_
+  - override hydra/job_logging: custom
+  - override hydra/hydra_logging: colorlog
+
+# paths
+run_suffix: ''
+data_root: './data'
+checkpoint_dir: './checkpoints/${model}${run_suffix}'
+checkpoint_path: '${checkpoint_dir}/checkpoint_best.pth'
+train_image_dir: '${data_root}/patches_img_trainset'
+train_mask_dir: '${data_root}/patches_mask_trainset'
+test_image_dir: '${data_root}/patches_img_testset'
+test_mask_dir: '${data_root}/patches_mask_testset'
+result_dir: './outputs/${model}${run_suffix}'
+
+# architecture
+in_channel: 3
+model: 'unet'
+encoder: 'resnet50'               # https://smp.readthedocs.io/en/latest/encoders.html
+encoder_weights: 'imagenet'
+classes: ['-', 'lh', 'mf', 'op', 'pp', 'sy', 'tsf', 'wr']
+remapping: {'0':0, '3':1, '4':2, '5':3, '6':4, '7':5, '8':6, '9':7}
+activation: null                  # null for logits (softmax to be computed in loss)
+
+# training & testing
+use_cuda: true
+warm: false                       # warm start from checkpoint
+warm_optimizer: true              # load optimizer from checkpoint if available
+warm_scheduler: true              # load scheduler from checkpoint if available
+freeze_encoder: false
+gpu_ids: [7, 8]
+num_epochs: 50
+weight_decay: 0.00001
+batch_size: 256
+num_workers: 11
+num_examples: 1000
+seed: 1117
+loss: ce                          # ce, dice, focal
+lr: 1e-3
+scheduler:
+  base_lr: 1e-4
+  max_lr: ${lr}
+  step_size_up: 2000
+  mode: triangular2
+
+# wandb
+wandb: false
+wandb_entity: zhaiyu
+wandb_project: mineseg
+wandb_dir: './outputs'
+
+# hydra settings
+hydra:
+  run:
+    dir: './outputs'
+  verbose: false
