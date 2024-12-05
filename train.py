@@ -44,7 +44,6 @@ def train(cfg: DictConfig):
     valid_dataloader = load_data(batch_size=cfg.batch_size, num_workers=cfg.num_workers,
                                 image_dir=cfg.valid_image_dir, mask_dir=cfg.valid_mask_dir, remapping=cfg.remapping)
 
-
     # define model: Unet, UnetPlusPlus, FPN, DeepLabV3, DeepLabV3Plus
     if cfg.model == 'unet':
         _model = smp.Unet
