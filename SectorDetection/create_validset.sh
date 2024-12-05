@@ -1,0 +1,14 @@
+mv out031* ./valid/
+mv out053* ./valid/
+mv out023* ./valid/
+mv out016* ./valid/
+mv out055* ./valid/
+mv out021* ./valid/
+mv out065* ./valid/
+mv out032* ./valid/
+mv out042* ./valid/
+mv out018* ./valid/
+mv out027* ./valid/
+mv out060* ./valid/
+mv out046* ./valid/
+mv out049* ./valid/
