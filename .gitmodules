@@ -1,0 +1,3 @@
+[submodule "mkgeotools"]
+	path = mkgeotools
+	url = git@github.com:maduschek/mkgeotools.git
