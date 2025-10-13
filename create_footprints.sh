@@ -1,9 +1,12 @@
 #!/bin/bash
 
 # This file goes through all geotiff (*.tif) files in a given folder
-# and extracts the extents of these files and collects them in a *.geojson file
+# and extracts the extents/bounding box of these files and collects them 
+# in a *.geojson file 
 # call: create_footprints.sh path/to/geotiffs path/to/footprints.geojson
+# prerequ.: gdal
 # # # #
+
 
 
 # Set the source directory containing the TIFF files

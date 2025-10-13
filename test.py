@@ -3,8 +3,10 @@ Testing for multi-class mining site segmentation.
 """
 
 import logging
-
+import pdb
+import numpy as np
 import hydra
+from numpy.ma.extras import average
 from omegaconf import DictConfig
 from tqdm import tqdm
 import torch
@@ -66,12 +68,6 @@ def test(cfg: DictConfig):
 
 
     # define metrics
-    mca_a = MulticlassAccuracy(num_classes=len(cfg.classes), average="macro").to(device)
-    mca_i = MulticlassAccuracy(num_classes=len(cfg.classes), average="micro").to(device)
-    mca_w = MulticlassAccuracy(num_classes=len(cfg.classes), average="weighted").to(device)
-    f1 = F1Score(task="multiclass", num_classes=len(cfg.classes)).to(device)
-    precision = Precision(task="multiclass", average='macro', num_classes=len(cfg.classes)).to(device)
-    recall = Recall(task="multiclass", average='macro', num_classes=len(cfg.classes)).to(device)
     confusion_matrix = ConfusionMatrix(task="multiclass", num_classes=len(cfg.classes)).to(device)
 
     # start evaluation
@@ -80,30 +76,40 @@ def test(cfg: DictConfig):
     # evaluation epoch
     model.eval()
     pbar_test = tqdm(test_dataloader)
-    f1_test, precision_test, recall_test, confusion_test, macro_test, micro_test, weighted_test = 0, 0, 0, 0, 0, 0, 0
+    f1_mac, f1_mic, pre_mac, pre_mic, rec_mac, rec_mic, confusion_test, acc_mac, acc_mic, weighted_test = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     for (images, targets) in pbar_test:
         with torch.no_grad():
             images = images.to(device)
             targets = targets.squeeze().to(device)
             outs = model(images)
 
-            macro_test += mca_a(outs, targets)
-            micro_test += mca_i(outs, targets)
-            weighted_test += mca_w(outs, targets)
-            f1_test += f1(outs, targets)
-            precision_test += precision(outs, targets)
-            recall_test += recall(outs, targets)
             confusion_test += confusion_matrix(outs, targets)
 
-    f1_test /= len(pbar_test)
-    precision_test /= len(pbar_test)
-    recall_test /= len(pbar_test)
-    macro_test /= len(pbar_test)
-    micro_test /= len(pbar_test)
-    weighted_test /= len(pbar_test)
 
-    logger.info('Test: mca_a={:.2f}, mca_i={:.2f}, mca_w={:.2f}, f1={:.2f}, precision={:.2f}, '
-                'recall={:.2f}'.format(macro_test, micro_test, weighted_test, f1_test, precision_test, recall_test))
+    ## SUMMARY OF RESULTS ##
+    # True Positives, False Positives, False Negatives, True Negatives
+
+    TP = np.diag(confusion_test)
+    FP = np.sum(confusion_test, axis=0) - TP
+    FN = np.sum(confusion_test, axis=1) - TP
+    TN = np.sum(confusion_test) - (TP + FP + FN)
+
+    # Sensitivity, hit rate, recall, or true positive rate
+    recall = TP / (TP + FN)
+    print("rec: ", recall)
+
+    # Precision or positive predictive value
+    precision = TP / (TP + FP)
+    print("precision: ", precision)
+
+    # Overall accuracy
+    accuracy = (TP + TN) / np.sum(confusion_matrix)
+    print("accuracy: ", accuracy)
+
+    # fscore
+    f1 = 2 * (precision * recall) / (precision + recall)
+    print("f1: ", f1)
+
     logger.info(f'Confusion matrix: \n{matrix_to_string(confusion_test)}')
 
 
